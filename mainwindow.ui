@@ -82,7 +82,10 @@ background-color: rgb(80, 80, 80);</string>
     </property>
     <addaction name="actOpen"/>
     <addaction name="separator"/>
+    <addaction name="actAutoRecv"/>
+    <addaction name="separator"/>
     <addaction name="actQuit"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -175,6 +178,17 @@ background-color: rgb(80, 80, 80);</string>
    </property>
    <property name="toolTip">
     <string>重启</string>
+   </property>
+  </action>
+  <action name="actAutoRecv">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>自动接收</string>
+   </property>
+   <property name="toolTip">
+    <string>自动接收</string>
    </property>
   </action>
  </widget>

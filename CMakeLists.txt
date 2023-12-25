@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(QtVTK VERSION 0.1.0 LANGUAGES CXX)
+project(QtVTK VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -44,18 +44,17 @@ if("${VTK_QT_VERSION}" STREQUAL "")
   message(FATAL_ERROR "VTK was not built with Qt")
 endif()
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets Network REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Network REQUIRED)
 
 # 添加子目录
 add_subdirectory(Config)
 add_subdirectory(CustomizeDialog)
 
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+        main.cpp mainwindow.cpp mainwindow.h mainwindow.ui
+        Protocol.h
+        udprecvthread.h udprecvthread.cpp
         Resource/Image/image.qrc
 )
 
@@ -83,7 +82,8 @@ else()
     endif()
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::Network)
 # 链接 VTK
 target_link_libraries(${PROJECT_NAME} PRIVATE ${VTK_LIBRARIES})
 # 链接自定义对话框

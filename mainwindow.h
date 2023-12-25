@@ -12,7 +12,9 @@
 #include "setdialog.h"
 #include "commondialog.h"
 
-// VTK headers
+#include "udprecvthread.h"
+
+/// @brief VTK headers
 #include <vtkPLYReader.h>
 #include <vtkSmartPointer.h>
 #include <vtkPoints.h>
@@ -73,9 +75,28 @@ public slots:
     /// @param index Default:默认 Gray:灰色 NavyBlue:藏青色 DarkBlue:深蓝色
     void sltRendererBackground(SysConfig::RendererBackground index);
 
+    /// @brief 帧开始
+    void sltFrameStart();
+
+    /// @brief 帧数据
+    /// @param x 坐标 X
+    /// @param y 坐标 Y
+    /// @param z 坐标 Z
+    void sltFrameData(double x, double y, double z);
+
+    /// @brief 帧结束
+    void sltFrameEnd();
+
+    /// @brief 程序退出
+    void sltFrameQuit();
+
 private slots:
     /// @brief 打开文件
     void slt_actOpen_triggered();
+
+    /// @brief 自动接收
+    /// @param arg1 true:自动接收 false:取消自动接收
+    void slt_actAutoRecv_toggled(bool arg1);
 
     /// @brief 退出
     void slt_actQuit_triggered();
@@ -156,7 +177,10 @@ private:
     QCheckBox chkInquiry;
     bool bAcceptClose;
 
-    // VTK variables
+    /// @brief UDPThread UDP 接收线程
+    UDPRecvThread UDPThread;
+
+    /// @brief VTK variables
     vtkIdType pid[1]; // 存储一个点的标识符
     double bounds[6]; // 获取数据范围
     vtkSmartPointer<vtkPLYReader> reader; // 读取PLY文件

@@ -46,3 +46,15 @@ SysConfig::RendererBackground SysConfig::getRendererBackground()
     QSettings configIniRead("./Config/config.ini", QSettings::IniFormat);
     return static_cast<RendererBackground>(configIniRead.value("/Universal/RendererBackground", SysConfig::Default).toInt());
 }
+
+void SysConfig::setAutoRecv(bool autoRecv)
+{
+    QSettings configIniWrite("./Config/config.ini", QSettings::IniFormat);
+    configIniWrite.setValue("/UDP/AutoRecv", autoRecv);
+}
+
+bool SysConfig::getAutoRecv()
+{
+    QSettings configIniRead("./Config/config.ini", QSettings::IniFormat);
+    return configIniRead.value("/UDP/AutoRecv", false).toBool();
+}

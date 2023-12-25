@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
-// VTK headers
+/// @brief VTK headers
 #include <vtkPointData.h>
 #include <vtkDataSet.h>
 #include <vtkProperty.h>
@@ -40,6 +40,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    UDPThread.start(); // 启动 UDP 接收线程
+
     // 设置窗口标志位
     if (SysConfig::getWindowTop()) {
         this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint); // 窗口置顶
@@ -47,15 +49,21 @@ MainWindow::MainWindow(QWidget *parent)
     this->setWindowTitle("点云编辑器 - guchi"); // 设置窗口标题
 
     initial(); // 初始化
+    initVTK(); // 初始化VTK
+    initSignalsAndSlots(); // 初始化信号与槽函数
     initSysConfig(); // 初始化配置
     initCloseWindow(); // 初始化关闭窗口
     initStatusbarMessage(); // 初始化状态栏显示消息
-    initVTK(); // 初始化VTK
-    initSignalsAndSlots(); // 初始化信号与槽函数
 }
 
 MainWindow::~MainWindow()
 {
+    // 若 UDP 接收线程正在运行，则结束线程
+    if (UDPThread.isRunning())
+    {
+        UDPThread.stopThread();
+    }
+
     delete ui;
 }
 
@@ -154,6 +162,49 @@ void MainWindow::sltRendererBackground(SysConfig::RendererBackground index)
     renderWindow->Render(); // 刷新渲染窗口
 }
 
+void MainWindow::sltFrameStart()
+{
+    ui->lbPointNum->clear(); // 清空点云个数内容
+
+    // 清除现有的点云显示
+    points->Initialize();
+    vertices->Initialize();
+}
+
+void MainWindow::sltFrameData(double x, double y, double z)
+{
+    pid[0] = points->InsertNextPoint(x, y, z);
+    vertices->InsertNextCell(1, pid);
+}
+
+void MainWindow::sltFrameEnd()
+{
+    // 设置一个包含标量数据的数组的大小，使其与点云数据中的点数相匹配
+    scalars->SetNumberOfTuples(points->GetNumberOfPoints());
+    // 插入顶点 创建一个包含单个顶点的单元，并将点云数据中的每个点与这些单元关联起来，从而定义了点云数据的拓扑结构
+    for (int i = 0; i < points->GetNumberOfPoints(); i++)
+    {
+        scalars->SetValue(i, points->GetPoint(i)[2]); // 将 z 值设置为标量值
+    }
+
+    polydata->GetBounds(bounds);
+    mapper->SetScalarRange(bounds[4], bounds[5]);
+
+    // 根据点云数据自适应地设置相机位置和视角
+    renderer->ResetCamera();
+
+    scalarBar->SetVisibility(true); // 显示标量条
+    marker->SetEnabled(1); // 启用坐标系标记
+
+    // 刷新渲染窗口以显示新的点云数据
+    renderWindow->Render();
+}
+
+void MainWindow::sltFrameQuit()
+{
+    ui->actReset->trigger();
+}
+
 void MainWindow::slt_actOpen_triggered()
 {
     // 选择 .ply 文件
@@ -176,6 +227,19 @@ void MainWindow::slt_actOpen_triggered()
     }
 }
 
+void MainWindow::slt_actAutoRecv_toggled(bool arg1)
+{
+//    qDebug() << "arg1 " << arg1;
+    if (arg1) {
+        UDPThread.bindPort(); // 绑定端口
+        SysConfig::setAutoRecv(true);
+    } else {
+        UDPThread.unbindPort(); // 关闭套接字并释放绑定的端口
+        SysConfig::setAutoRecv(false);
+        ui->actReset->trigger();
+    }
+}
+
 void MainWindow::slt_actQuit_triggered()
 {
     this->close();
@@ -183,6 +247,8 @@ void MainWindow::slt_actQuit_triggered()
 
 void MainWindow::slt_actReset_triggered()
 {
+    ui->lbPointNum->clear(); // 清空点云个数内容
+
     // 清除现有的点云显示
     points->Initialize();
     vertices->Initialize();
@@ -192,12 +258,12 @@ void MainWindow::slt_actReset_triggered()
 
     // 刷新渲染窗口
     renderWindow->Render();
-
-    ui->lbPointNum->clear(); // 清空点云个数内容
 }
 
 void MainWindow::slt_actAdd_triggered()
 {
+    ui->lbPointNum->clear(); // 清空点云个数内容
+
     // 清除现有的点云显示
     points->Initialize();
     vertices->Initialize();
@@ -310,7 +376,11 @@ void MainWindow::initial()
 
 void MainWindow::initSysConfig()
 {
+    // 设置界面参数显示
     dlgSet.setControlShow(SysConfig::getWindowTop(), SysConfig::getWindowClose(), SysConfig::getRendererBackground());
+
+    // 自动接收显示
+    ui->actAutoRecv->setChecked(SysConfig::getAutoRecv());
 }
 
 void MainWindow::initCloseWindow()
@@ -470,6 +540,8 @@ void MainWindow::initSignalsAndSlots()
     /************ QAction 项对应的槽 ************/
     // 打开文件
     connect(ui->actOpen, &QAction::triggered, this, &MainWindow::slt_actOpen_triggered);
+    // 自动接收
+    connect(ui->actAutoRecv, &QAction::toggled, this, &MainWindow::slt_actAutoRecv_toggled);
     // 退出
     connect(ui->actQuit, &QAction::triggered, this, &MainWindow::slt_actQuit_triggered);
     // 重置
@@ -482,15 +554,28 @@ void MainWindow::initSignalsAndSlots()
     connect(ui->actUniversal, &QAction::triggered, this, &MainWindow::slt_actUniversal_triggered);
     // 关于
     connect(ui->actAbout, &QAction::triggered, this, &MainWindow::slt_actAbout_triggered);
+
+    /************ 窗口关闭询问界面 ************/
     // 连接信号与槽，监听用户点击的按钮，如果用户同意关闭，则程序退出
     connect(&msgBox, &QMessageBox::buttonClicked, this, &MainWindow::buttonClicked);
     // 窗口询问改变
     connect(&chkInquiry, &QCheckBox::stateChanged, this, &MainWindow::slt_chkInquiry_stateChanged);
-    /************ 设置 ************/
+
+    /************ 设置界面 ************/
     // 窗口置顶
-    // 渲染背景
     connect(&dlgSet, &SetDialog::sigWindowOnTop, this, &MainWindow::sltWindowOnTop);
+    // 渲染背景
     connect(&dlgSet, &SetDialog::sigRendererBackground, this, &MainWindow::sltRendererBackground);
+
+    /************ UDP 接收线程处理显示 ************/
+    // 帧开始
+    connect(&UDPThread, &UDPRecvThread::sigFrameStart, this, &MainWindow::sltFrameStart);
+    // 帧数据
+    connect(&UDPThread, &UDPRecvThread::sigFrameData, this, &MainWindow::sltFrameData);
+    // 帧结束
+    connect(&UDPThread, &UDPRecvThread::sigFrameEnd, this, &MainWindow::sltFrameEnd);
+    // 程序退出
+    connect(&UDPThread, &UDPRecvThread::sigFrameQuit, this, &MainWindow::sltFrameQuit);
 }
 
 void MainWindow::setRendererBackground(SysConfig::RendererBackground index)

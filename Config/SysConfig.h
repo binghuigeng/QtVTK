@@ -45,6 +45,14 @@ public:
     /// @brief 获取渲染背景
     /// @return Default:默认 Gray:灰色 NavyBlue:藏青色 DarkBlue:深蓝色
     static RendererBackground getRendererBackground();
+
+    /// @brief 设置自动接收
+    /// @param autoRecv true:自动接收 false:取消自动接收
+    static void setAutoRecv(bool autoRecv);
+
+    /// @brief 获取自动接收
+    /// @return true:自动接收 false:取消自动接收
+    static bool getAutoRecv();
 };
 
 #endif // SYSCONFIG_H
