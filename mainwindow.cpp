@@ -179,25 +179,27 @@ void MainWindow::sltFrameData(double x, double y, double z)
 
 void MainWindow::sltFrameEnd()
 {
-    // 设置一个包含标量数据的数组的大小，使其与点云数据中的点数相匹配
-    scalars->SetNumberOfTuples(points->GetNumberOfPoints());
-    // 插入顶点 创建一个包含单个顶点的单元，并将点云数据中的每个点与这些单元关联起来，从而定义了点云数据的拓扑结构
-    for (int i = 0; i < points->GetNumberOfPoints(); i++)
-    {
-        scalars->SetValue(i, points->GetPoint(i)[2]); // 将 z 值设置为标量值
+    if (points->GetNumberOfPoints() > 0) {
+        // 设置一个包含标量数据的数组的大小，使其与点云数据中的点数相匹配
+        scalars->SetNumberOfTuples(points->GetNumberOfPoints());
+        // 插入顶点 创建一个包含单个顶点的单元，并将点云数据中的每个点与这些单元关联起来，从而定义了点云数据的拓扑结构
+        for (int i = 0; i < points->GetNumberOfPoints(); i++)
+        {
+            scalars->SetValue(i, points->GetPoint(i)[2]); // 将 z 值设置为标量值
+        }
+
+        polydata->GetBounds(bounds);
+        mapper->SetScalarRange(bounds[4], bounds[5]);
+
+        // 根据点云数据自适应地设置相机位置和视角
+        renderer->ResetCamera();
+
+        scalarBar->SetVisibility(true); // 显示标量条
+        marker->SetEnabled(1); // 启用坐标系标记
+
+        // 刷新渲染窗口以显示新的点云数据
+        renderWindow->Render();
     }
-
-    polydata->GetBounds(bounds);
-    mapper->SetScalarRange(bounds[4], bounds[5]);
-
-    // 根据点云数据自适应地设置相机位置和视角
-    renderer->ResetCamera();
-
-    scalarBar->SetVisibility(true); // 显示标量条
-    marker->SetEnabled(1); // 启用坐标系标记
-
-    // 刷新渲染窗口以显示新的点云数据
-    renderWindow->Render();
 }
 
 void MainWindow::sltFrameQuit()

@@ -48,7 +48,7 @@ public:
     void unbindPort();
 
     /// @brief 结束线程
-    void    stopThread();
+    void stopThread();
 
 protected:
     void run() override;
@@ -83,12 +83,6 @@ private slots:
 private:
     /// @brief CRC16 校验函数
     unsigned short cal_crc(const unsigned char *bytes, int len);
-
-private:
-    /// @brief udpSocket UDP 套接字
-//    QUdpSocket udpSocket;
-
-//    UdpReceiver receiver;
 };
 
 #endif // UDPRECVTHREAD_H
