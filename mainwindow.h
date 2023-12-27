@@ -113,6 +113,9 @@ private slots:
     /// @brief 通用
     void slt_actUniversal_triggered();
 
+    /// @brief 点云颜色
+    void slt_actPointCloudColor_toggled(bool arg1);
+
     /// @brief 关于
     void slt_actAbout_triggered();
 

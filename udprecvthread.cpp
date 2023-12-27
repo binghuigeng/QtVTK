@@ -48,9 +48,8 @@ void UdpReceiver::sltUnbindPort()
 
 void UdpReceiver::readPendingDatagrams()
 {
-    while(udpSocket.hasPendingDatagrams())
-    {
-        QByteArray   datagram;
+    while (udpSocket.hasPendingDatagrams()) {
+        QByteArray datagram;
         datagram.resize(udpSocket.pendingDatagramSize());
         udpSocket.readDatagram(datagram.data(),datagram.size());
 

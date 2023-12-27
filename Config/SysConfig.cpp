@@ -47,6 +47,18 @@ SysConfig::RendererBackground SysConfig::getRendererBackground()
     return static_cast<RendererBackground>(configIniRead.value("/Universal/RendererBackground", SysConfig::Default).toInt());
 }
 
+void SysConfig::setPointCloudColor(bool enabled)
+{
+    QSettings configIniWrite("./Config/config.ini", QSettings::IniFormat);
+    configIniWrite.setValue("/PointCloud/Color", enabled);
+}
+
+bool SysConfig::getPointCloudColor()
+{
+    QSettings configIniRead("./Config/config.ini", QSettings::IniFormat);
+    return configIniRead.value("/PointCloud/Color", false).toBool();
+}
+
 void SysConfig::setAutoRecv(bool autoRecv)
 {
     QSettings configIniWrite("./Config/config.ini", QSettings::IniFormat);

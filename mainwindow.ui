@@ -107,6 +107,8 @@ background-color: rgb(80, 80, 80);</string>
      <string>设置</string>
     </property>
     <addaction name="actUniversal"/>
+    <addaction name="separator"/>
+    <addaction name="actPointCloudColor"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
@@ -189,6 +191,17 @@ background-color: rgb(80, 80, 80);</string>
    </property>
    <property name="toolTip">
     <string>自动接收</string>
+   </property>
+  </action>
+  <action name="actPointCloudColor">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>点云颜色</string>
+   </property>
+   <property name="toolTip">
+    <string>点云颜色</string>
    </property>
   </action>
  </widget>

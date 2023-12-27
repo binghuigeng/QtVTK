@@ -46,6 +46,14 @@ public:
     /// @return Default:默认 Gray:灰色 NavyBlue:藏青色 DarkBlue:深蓝色
     static RendererBackground getRendererBackground();
 
+    /// @brief 设置点云颜色
+    /// @param enabled true:显示颜色 false:取消显示颜色
+    static void setPointCloudColor(bool enabled);
+
+    /// @brief 获取点云颜色
+    /// @return true:显示颜色 false:取消显示颜色
+    static bool getPointCloudColor();
+
     /// @brief 设置自动接收
     /// @param autoRecv true:自动接收 false:取消自动接收
     static void setAutoRecv(bool autoRecv);
