@@ -114,6 +114,7 @@ private slots:
     void slt_actUniversal_triggered();
 
     /// @brief 点云颜色
+    /// @param arg1 true:显示点云颜色 false:不显示点云颜色
     void slt_actPointCloudColor_toggled(bool arg1);
 
     /// @brief 关于
@@ -151,6 +152,7 @@ private:
     void setRendererBackground(SysConfig::RendererBackground index);
 
     /// @brief 显示点云
+    /// @param fileName 文件路径
     void showPointCloud(QString fileName);
 
     /// @brief 显示点云文件信息

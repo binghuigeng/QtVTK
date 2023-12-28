@@ -9,6 +9,7 @@ SetDialog::SetDialog(QWidget *parent) :
 
     initial(); //初始化
     initSignalAndSlot(); //初始化信号与槽连接
+    ui->btnUdpBase->setChecked(SysConfig::getUdpBase() == 16 ? true : false);
 }
 
 SetDialog::~SetDialog()
@@ -94,6 +95,27 @@ void SetDialog::slt_rdoDarkBlue_clicked()
     emit sigRendererBackground(SysConfig::DarkBlue);
 }
 
+void SetDialog::slt_spbUdpPort_valueChanged(int arg1)
+{
+    SysConfig::setUdpPort(arg1);
+}
+
+void SetDialog::slt_btnUdpBase_toggled(bool checked)
+{
+    if (checked) {
+        ui->spbUdpPort->setPrefix("0x");
+        ui->spbUdpPort->setDisplayIntegerBase(16); // 设置显示为 16 进制
+//        ui->spbUdpPort->setSpecialValueText("0x0");
+        ui->btnUdpBase->setText("十六进制");
+        SysConfig::setUdpBase(16);
+    } else {
+        ui->spbUdpPort->setPrefix("");
+        ui->spbUdpPort->setDisplayIntegerBase(10); // 设置显示为 10 进制
+        ui->btnUdpBase->setText("十进制");
+        SysConfig::setUdpBase(10);
+    }
+}
+
 void SetDialog::initial()
 {
     // 设置窗口标志位 隐藏窗口的最小化和最大化按钮，以及窗口置顶
@@ -104,7 +126,12 @@ void SetDialog::initial()
     // 设置窗口标题
     this->setWindowTitle("设置"); // 设置窗口标志位 窗口置顶
 
-//    // 关闭按钮
+    // UDP
+    ui->spbUdpPort->setRange(0, 65535); // 设置范围为0到255
+    ui->spbUdpPort->setValue(SysConfig::getUdpPort());
+    ui->btnUdpBase->setCheckable(true); // 设置进制转换按钮为可选中状态，这意味着用户可以单击按钮来切换其选中状态
+
+    // 关闭按钮
 //    ui->btnClose->setText("关闭");
 }
 
@@ -119,4 +146,7 @@ void SetDialog::initSignalAndSlot()
     connect(ui->rdoGray, &QRadioButton::clicked, this, &SetDialog::slt_rdoGray_clicked);
     connect(ui->rdoNavyBlue, &QRadioButton::clicked, this, &SetDialog::slt_rdoNavyBlue_clicked);
     connect(ui->rdoDarkBlue, &QRadioButton::clicked, this, &SetDialog::slt_rdoDarkBlue_clicked);
+    // UDP
+    connect(ui->spbUdpPort, QOverload<int>::of(&QSpinBox::valueChanged), this, &SetDialog::slt_spbUdpPort_valueChanged);
+    connect(ui->btnUdpBase, &QPushButton::toggled, this, &SetDialog::slt_btnUdpBase_toggled);
 }

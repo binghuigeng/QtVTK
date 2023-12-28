@@ -57,6 +57,14 @@ private slots:
     /// @brief 深蓝色渲染背景
     void slt_rdoDarkBlue_clicked();
 
+    /// @brief UDP 端口发生改变
+    /// @param arg1 改变后的值
+    void slt_spbUdpPort_valueChanged(int arg1);
+
+    /// @brief UDP 端口进制转换
+    /// @param checked true:选中 false:未选中
+    void slt_btnUdpBase_toggled(bool checked);
+
 private:
     Ui::SetDialog *ui;
 

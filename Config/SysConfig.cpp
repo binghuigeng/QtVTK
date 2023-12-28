@@ -59,6 +59,30 @@ bool SysConfig::getPointCloudColor()
     return configIniRead.value("/PointCloud/Color", false).toBool();
 }
 
+void SysConfig::setUdpBase(int base)
+{
+    QSettings configIniWrite("./Config/config.ini", QSettings::IniFormat);
+    configIniWrite.setValue("/UDP/Base", base);
+}
+
+int SysConfig::getUdpBase()
+{
+    QSettings configIniRead("./Config/config.ini", QSettings::IniFormat);
+    return configIniRead.value("/UDP/Base", 10).toInt();
+}
+
+void SysConfig::setUdpPort(unsigned short port)
+{
+    QSettings configIniWrite("./Config/config.ini", QSettings::IniFormat);
+    configIniWrite.setValue("/UDP/Port", port);
+}
+
+unsigned short SysConfig::getUdpPort()
+{
+    QSettings configIniRead("./Config/config.ini", QSettings::IniFormat);
+    return configIniRead.value("/UDP/Port", 60000).toUInt();
+}
+
 void SysConfig::setAutoRecv(bool autoRecv)
 {
     QSettings configIniWrite("./Config/config.ini", QSettings::IniFormat);

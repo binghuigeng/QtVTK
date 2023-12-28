@@ -1,5 +1,6 @@
 #include "udprecvthread.h"
 #include "Protocol.h"
+#include "SysConfig.h"
 
 UdpReceiver::UdpReceiver(QObject *parent) : QObject(parent)
 {
@@ -32,12 +33,13 @@ UdpReceiver::~UdpReceiver()
 void UdpReceiver::sltBindPort()
 {
     // 允许其他服务绑定同样的地址和端口 | 在地址和端口已经被其他套接字绑定的情况下，也应该试着重新绑定
-    if (udpSocket.bind(QHostAddress::AnyIPv4, UDP_PORT, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
+    if (udpSocket.bind(QHostAddress::AnyIPv4, SysConfig::getUdpPort(), QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
 //        qDebug("recver bind ok");
     }
     else {
         qDebug("recver bind PORT failed, please check NETWORK");
     }
+//    qDebug() << "bing port " << QString::number(udpSocket.localPort());
 }
 
 void UdpReceiver::sltUnbindPort()

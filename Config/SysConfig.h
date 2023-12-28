@@ -54,6 +54,22 @@ public:
     /// @return true:显示颜色 false:取消显示颜色
     static bool getPointCloudColor();
 
+    /// @brief 设置 UDP 端口的进制显示
+    /// @param port UDP 端口的进制显示
+    static void setUdpBase(int base);
+
+    /// @brief 获取 UDP 端口的进制显示
+    /// @return UDP 端口的进制显示
+    static int getUdpBase();
+
+    /// @brief 设置 UDP 端口
+    /// @param port UDP 端口
+    static void setUdpPort(unsigned short port);
+
+    /// @brief 获取 UDP 端口
+    /// @return UDP 端口
+    static unsigned short getUdpPort();
+
     /// @brief 设置自动接收
     /// @param autoRecv true:自动接收 false:取消自动接收
     static void setAutoRecv(bool autoRecv);
