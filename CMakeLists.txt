@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(QtVTK VERSION 0.2.3 LANGUAGES CXX)
+project(QtVTK VERSION 0.2.4 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -44,6 +44,12 @@ if("${VTK_QT_VERSION}" STREQUAL "")
   message(FATAL_ERROR "VTK was not built with Qt")
 endif()
 
+# 查找 Eigen 库
+find_package(Eigen3 REQUIRED)
+
+# 将 Eigen 的头文件目录添加到包含路径中
+include_directories(${EIGEN3_INCLUDE_DIR})
+
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets Network REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Network REQUIRED)
 
@@ -53,7 +59,8 @@ add_subdirectory(CustomizeDialog)
 
 set(PROJECT_SOURCES
         main.cpp mainwindow.cpp mainwindow.h mainwindow.ui
-        Protocol.h
+        protocol.h protocol.cpp
+        util.h util.cpp
         udprecvthread.h udprecvthread.cpp
         Resource/Image/image.qrc
 )

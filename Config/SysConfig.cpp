@@ -56,7 +56,7 @@ void SysConfig::setPointCloudColor(bool enabled)
 bool SysConfig::getPointCloudColor()
 {
     QSettings configIniRead("./Config/config.ini", QSettings::IniFormat);
-    return configIniRead.value("/PointCloud/Color", false).toBool();
+    return configIniRead.value("/PointCloud/Color", true).toBool();
 }
 
 void SysConfig::setUdpBase(int base)

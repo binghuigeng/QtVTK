@@ -1,6 +1,8 @@
 #include "udprecvthread.h"
-#include "Protocol.h"
 #include "SysConfig.h"
+#include "protocol.h"
+#include "util.h"
+#include <iostream>
 
 UdpReceiver::UdpReceiver(QObject *parent) : QObject(parent)
 {
@@ -96,48 +98,69 @@ void UDPRecvThread::run()
 }
 
 void UDPRecvThread::unpackUDP(const QByteArray &datagram)
-{ 
-    // 接收数据
-    PC_TRANSPORT *msg = (PC_TRANSPORT*)datagram.data();
-    // 检测报文长度
-    if (sizeof (PC_TRANSPORT) == msg->head.length) {
-        // 检测报文标识
-        if (ID_POINT_CLOUD == msg->head.id) {
-            // 检测报文校验
-            unsigned short crc_check = *(unsigned short *)(datagram.data()+datagram.size()-2);
-            if (cal_crc((unsigned char *)datagram.data(), datagram.size()-2) == crc_check) {
-                // 检测报文标志
-                if (FS_POINT_CLOUD == msg->flag) {
-                    // 帧头
+{
+    if (sizeof (ROBOT_TNFO) == datagram.size()) {
+        ROBOT_TNFO *msg = (ROBOT_TNFO*)datagram.data();
+        reverse_ROBOT_TNFO(msg);
+        QString strMsg = QString("%1, %2, %3, %4, %5, %6 distance:%7 timestamp:%8")
+                .arg(QString::number(msg->x, 'f', 6),
+                     QString::number(msg->y, 'f', 6),
+                     QString::number(msg->z, 'f', 6),
+                     QString::number(msg->w, 'f', 6),
+                     QString::number(msg->p, 'f', 6),
+                     QString::number(msg->r, 'f', 6),
+                     QString::number(msg->distance, 'f', 6),
+                     QString::number(msg->timestamp));
+        qDebug() << strMsg;
+
+        Eigen::Matrix4d homogeneousTransform = Util::poseToMatrix(Eigen::Vector3d(msg->w, msg->p, msg->r),
+                                                                  Eigen::Vector3d(msg->x, msg->y, msg->z));
+        std::cout << "homogeneousTransform =" << std::endl << homogeneousTransform << std::endl;
+    } else if (sizeof (PC_TRANSPORT) == datagram.size()) {
+        // 接收数据
+        PC_TRANSPORT *msg = (PC_TRANSPORT*)datagram.data();
+        // 检测报文长度
+        if (sizeof (PC_TRANSPORT) == msg->head.length) {
+            // 检测报文标识
+            if (ID_POINT_CLOUD == msg->head.id) {
+                // 检测报文校验
+                unsigned short crc_check = *(unsigned short *)(datagram.data()+datagram.size()-2);
+                if (cal_crc((unsigned char *)datagram.data(), datagram.size()-2) == crc_check) {
+                    // 检测报文标志
+                    if (FS_POINT_CLOUD == msg->flag) {
+                        // 帧头
 //                        qDebug("Frame Start");
-                    emit sigFrameStart();
-                } else if (FD_POINT_CLOUD == msg->flag) {
-                    // 数据
+                        emit sigFrameStart();
+                    } else if (FD_POINT_CLOUD == msg->flag) {
+                        // 数据
 //                        qDebug("Frame Data");
-                    emit sigFrameData(msg->data.x, msg->data.y, msg->data.z);
-                } else if (FE_POINT_CLOUD == msg->flag) {
-                    // 帧尾
+                        emit sigFrameData(msg->data.x, msg->data.y, msg->data.z);
+                    } else if (FE_POINT_CLOUD == msg->flag) {
+                        // 帧尾
 //                        qDebug("Frame End");
-                    emit sigFrameEnd();
-                } else if (FQ_POINT_CLOUD == msg->flag) {
-                    // 程序退出
+                        emit sigFrameEnd();
+                    } else if (FQ_POINT_CLOUD == msg->flag) {
+                        // 程序退出
 //                        qDebug("Frame Quit");
-                    emit sigFrameQuit();
-                }
+                        emit sigFrameQuit();
+                    }
 #if 0
-                QString strMsg = QString("length:0x%1, id:0x%2, X:%3, Y:%4, Z:%5")
-                        .arg(QString::number(msg->head.length, 16).toUpper(),
-                             QString::number(msg->head.id, 16).toUpper(),
-                             QString::number(msg->data.x, 'f', 6),
-                             QString::number(msg->data.y, 'f', 6),
-                             QString::number(msg->data.z, 'f', 6));
-                qDebug() << strMsg;
+                    QString strMsg = QString("length:0x%1, id:0x%2, X:%3, Y:%4, Z:%5")
+                            .arg(QString::number(msg->head.length, 16).toUpper(),
+                                 QString::number(msg->head.id, 16).toUpper(),
+                                 QString::number(msg->data.x, 'f', 6),
+                                 QString::number(msg->data.y, 'f', 6),
+                                 QString::number(msg->data.z, 'f', 6));
+                    qDebug() << strMsg;
 #endif
-            } else {
-                qDebug("crc error(id:0x%04X flag:0x%04X crc:0x%04X crc_check:0x%04X)",
-                       msg->head.id, msg->flag, msg->check, crc_check);
+                } else {
+                    qDebug("crc error(id:0x%04X flag:0x%04X crc:0x%04X crc_check:0x%04X)",
+                           msg->head.id, msg->flag, msg->check, crc_check);
+                }
             }
         }
+    } else {
+        qDebug("Unknown datagram");
     }
 }
 
