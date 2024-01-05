@@ -13,6 +13,7 @@
 #include "commondialog.h"
 
 #include "udprecvthread.h"
+#include "outlineimagethread.h"
 
 /// @brief VTK headers
 #include <vtkPLYReader.h>
@@ -89,6 +90,10 @@ public slots:
 
     /// @brief 程序退出
     void sltFrameQuit();
+
+    /// @brief 控制轮廓图像线程
+    /// @param state 状态 true:启动轮廓图像线程 false:结束轮廓图像线程
+    void sltCtrlOutlineThread(bool state);
 
 private slots:
     /// @brief 打开文件
@@ -182,8 +187,11 @@ private:
     QCheckBox chkInquiry;
     bool bAcceptClose;
 
-    /// @brief UDPThread UDP 接收线程
-    UDPRecvThread UDPThread;
+    /// @brief UDP 接收线程
+    UDPRecvThread udpThread;
+
+    /// @brief 轮廓数据
+    OutlineImageThread outlineThread;
 
     /// @brief VTK variables
     vtkIdType pid[1]; // 存储一个点的标识符

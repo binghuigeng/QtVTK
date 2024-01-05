@@ -50,6 +50,11 @@ find_package(Eigen3 REQUIRED)
 # 将 Eigen 的头文件目录添加到包含路径中
 include_directories(${EIGEN3_INCLUDE_DIR})
 
+# Mv3dLpSDK
+include_directories(D:/3DMVS/Development/Mv3dLpSDK/Include)
+include_directories(D:/3DMVS/Development/Mv3dLpSDK/Sample/C)
+link_directories(D:/3DMVS/Development/Mv3dLpSDK/Lib/win64)
+
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets Network REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Network REQUIRED)
 
@@ -62,6 +67,7 @@ set(PROJECT_SOURCES
         protocol.h protocol.cpp
         util.h util.cpp
         udprecvthread.h udprecvthread.cpp
+        outlineimagethread.h outlineimagethread.cpp
         Resource/Image/image.qrc
 )
 
@@ -93,6 +99,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Network)
 # 链接 VTK
 target_link_libraries(${PROJECT_NAME} PRIVATE ${VTK_LIBRARIES})
+# 链接 Mv3dLpSDK
+target_link_libraries(${PROJECT_NAME} PRIVATE Mv3dLp.lib)
 # 链接自定义对话框
 target_link_libraries(${PROJECT_NAME} PUBLIC Config CustomizeDialog)
 

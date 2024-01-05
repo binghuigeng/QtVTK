@@ -10,6 +10,16 @@ Util::~Util()
 
 }
 
+unsigned long long Util::htonll(unsigned long long hostLongLong)
+{
+    if (IS_LITTLE_ENDIAN)  {
+        return reverseByteOrderll(hostLongLong);
+    }
+    else {
+        return hostLongLong;
+    }
+}
+
 float Util::htonf(float hostFloat)
 {
     if (IS_LITTLE_ENDIAN)  {
@@ -39,6 +49,11 @@ unsigned short Util::htons(unsigned short hostShort)
     else {
         return hostShort;
     }
+}
+
+unsigned long long Util::ntohll(unsigned long long netLongLong)
+{
+    return htonll(netLongLong);
 }
 
 float Util::ntohf(float netFloat)
@@ -77,6 +92,18 @@ Eigen::Matrix4d Util::poseToMatrix(const Eigen::Vector3d &eulerAngle, const Eige
     homogeneousTransform.block<3, 1>(0, 3) = translation;
 
     return homogeneousTransform;
+}
+
+unsigned long long Util::reverseByteOrderll(unsigned long long x)
+{
+    return ((((x) >> 56) & 0x00000000000000FF) |
+            (((x) >> 40) & 0x000000000000FF00) |
+            (((x) >> 24) & 0x0000000000FF0000) |
+            (((x) >> 8) & 0x00000000FF000000) |
+            (((x) << 8) & 0x000000FF00000000) |
+            (((x) << 24) & 0x0000FF0000000000) |
+            (((x) << 40) & 0x00FF000000000000) |
+            (((x) << 56) & 0xFF00000000000000));
 }
 
 unsigned int Util::reverseByteOrderl(unsigned int x)

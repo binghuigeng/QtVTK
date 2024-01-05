@@ -3,6 +3,7 @@
 #include "protocol.h"
 #include "util.h"
 #include <iostream>
+#include <QDateTime>
 
 UdpReceiver::UdpReceiver(QObject *parent) : QObject(parent)
 {
@@ -100,9 +101,28 @@ void UDPRecvThread::run()
 void UDPRecvThread::unpackUDP(const QByteArray &datagram)
 {
     if (sizeof (ROBOT_TNFO) == datagram.size()) {
+        // 解析报文的机器人状态
         ROBOT_TNFO *msg = (ROBOT_TNFO*)datagram.data();
-        reverse_ROBOT_TNFO(msg);
-        QString strMsg = QString("%1, %2, %3, %4, %5, %6 distance:%7 timestamp:%8")
+        int robotState = Util::ntohl(msg->state);
+        // 发布机器人状态
+        publishRobotState(robotState);
+        if (0 == robotState) {
+            // 启动轮廓图像线程
+            emit sigCtrlOutlineThread(true);
+
+            timestampRobot = Util::ntohl(msg->timestamp); // 记录机器人数据时间戳
+        } else if (1 == robotState) {
+            if (totalRobotSize + datagram.size() <= MAX_SIZE) {
+                // 使用 memcpy 进行内存拷贝
+                memcpy(pRobot + totalRobotSize, datagram.data(), datagram.size());
+                totalRobotSize += datagram.size();
+            }
+        } else if (2 == robotState) {
+            // 结束轮廓图像线程
+            emit sigCtrlOutlineThread(false);
+        }
+#if 0
+        QString strMsg = QString("%1, %2, %3, %4, %5, %6 distance:%7 timestamp:%8 state:%9")
                 .arg(QString::number(msg->x, 'f', 6),
                      QString::number(msg->y, 'f', 6),
                      QString::number(msg->z, 'f', 6),
@@ -110,12 +130,16 @@ void UDPRecvThread::unpackUDP(const QByteArray &datagram)
                      QString::number(msg->p, 'f', 6),
                      QString::number(msg->r, 'f', 6),
                      QString::number(msg->distance, 'f', 6),
-                     QString::number(msg->timestamp));
-        qDebug() << strMsg;
+                     QString::number(msg->timestamp),
+                     QString::number(msg->state));
+        qDebug() << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz") << strMsg;
+#endif
 
+#if 0
         Eigen::Matrix4d homogeneousTransform = Util::poseToMatrix(Eigen::Vector3d(msg->w, msg->p, msg->r),
                                                                   Eigen::Vector3d(msg->x, msg->y, msg->z));
         std::cout << "homogeneousTransform =" << std::endl << homogeneousTransform << std::endl;
+#endif
     } else if (sizeof (PC_TRANSPORT) == datagram.size()) {
         // 接收数据
         PC_TRANSPORT *msg = (PC_TRANSPORT*)datagram.data();
@@ -207,4 +231,30 @@ unsigned short UDPRecvThread::cal_crc(const unsigned char *bytes, int len)
         crc_check = crc16_table[((crc_check >> 8) ^ *bytes++) & 0xff] ^ (crc_check << 8);
     }
     return crc_check;
+}
+
+void UDPRecvThread::initStorage()
+{
+#if 0
+    // 将数组全部置为 0
+    memset(pRobot, 0, sizeof (pRobot));
+    memset(pOutline, 0, sizeof (pOutline));
+#endif
+    totalRobotSize = 0; // 用于跟踪已添加的机器人数据大小
+    totalOutlineSize = 0; // 用于跟踪已添加的轮廓数据大小
+    timestampRobot = 0; // 机器人数据时间戳
+    timestampOutline = 0; // 轮廓数据时间戳
+}
+
+void UDPRecvThread::publishRobotState(const int &state)
+{
+    static int lastState = -1;
+    if (lastState != state) {
+        if (0 == state) {
+            initStorage(); // 初始化存储
+        }
+        lastState = state;
+        emit sigRobotState(lastState);
+        qDebug("publishRobotState: %d", lastState);
+    }
 }

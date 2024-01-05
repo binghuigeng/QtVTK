@@ -75,6 +75,14 @@ signals:
     /// @brief 程序退出
     void sigFrameQuit();
 
+    /// @brief 机器人状态
+    /// @param state 状态 0:开始 1:运行中 2:结束
+    void sigRobotState(int state);
+
+    /// @brief 控制轮廓图像线程
+    /// @param state 状态 true:启动轮廓图像线程 false:结束轮廓图像线程
+    void sigCtrlOutlineThread(bool state);
+
 private slots:
     /// @brief 解析 UDP 传入的数据
     /// @param data UDP 传入的数据
@@ -83,6 +91,13 @@ private slots:
 private:
     /// @brief CRC16 校验函数
     unsigned short cal_crc(const unsigned char *bytes, int len);
+
+    /// @brief 初始化存储
+    void initStorage();
+
+    /// @brief 发布机器人状态
+    /// @param state 状态 0:开始 1:运行中 2:结束
+    void publishRobotState(const int &state);
 };
 
 #endif // UDPRECVTHREAD_H

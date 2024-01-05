@@ -92,5 +92,5 @@ void SysConfig::setAutoRecv(bool autoRecv)
 bool SysConfig::getAutoRecv()
 {
     QSettings configIniRead("./Config/config.ini", QSettings::IniFormat);
-    return configIniRead.value("/UDP/AutoRecv", false).toBool();
+    return configIniRead.value("/UDP/AutoRecv", true).toBool();
 }

@@ -23,6 +23,9 @@ static union
 #define CONVERT_MEMBER_BYTE_ORDER(PACKET, MEMBER, FUNC) \
     (PACKET->MEMBER = FUNC(PACKET->MEMBER))
 
+/// @brief 使用宏来定义一个计算最小值的函数
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 #include <QObject>
 #include <Eigen/Dense>
 
@@ -32,6 +35,9 @@ public:
     Util();
     ~Util();
 
+    /// @brief 把uint64_t类型从主机序转换到网络序
+    static unsigned long long htonll(unsigned long long hostLongLong);
+
     /// @brief 把float类型从主机序转换到网络序
     static float htonf(float hostFloat);
 
@@ -40,6 +46,9 @@ public:
 
     /// @brief 把uint16_t类型从主机序转换到网络序
     static unsigned short htons(unsigned short hostShort);
+
+    /// @brief 把uint64_t类型从网络序转换到主机序
+    static unsigned long long ntohll(unsigned long long netLongLong);
 
     /// @brief 把float类型从网络序转换到主机序
     static float ntohf(float netFloat);
@@ -58,6 +67,9 @@ public:
                                         const Eigen::Vector3d& translation);
 
 private:
+    /// @brief 将一8字节整数反序后返回。即若输入0xABCD5678，则返回0x7856CDAB
+    static unsigned long long reverseByteOrderll(unsigned long long x);
+
     /// @brief 将一4字节整数反序后返回。即若输入0xABCD5678，则返回0x7856CDAB
     static unsigned int reverseByteOrderl(unsigned int x);
 

@@ -40,7 +40,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    UDPThread.start(); // 启动 UDP 接收线程
+    udpThread.start(); // 启动 UDP 接收线程
+    outlineThread.startMv3dLpSDK(); // 启动 Mv3dLpSDK
 
     // 设置窗口标志位
     if (SysConfig::getWindowTop()) {
@@ -59,10 +60,18 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     // 若 UDP 接收线程正在运行，则结束线程
-    if (UDPThread.isRunning())
+    if (udpThread.isRunning())
     {
-        UDPThread.stopThread();
+        udpThread.stopThread();
     }
+
+    // 若轮廓图像数据线程正在运行，则结束线程
+    if (outlineThread.isRunning())
+    {
+        outlineThread.setThreadFlag(false); // 设置线程运行标志
+        outlineThread.wait();
+    }
+    outlineThread.quitMv3dLpSDK(); // 退出 Mv3dLpSDK
 
     delete ui;
 }
@@ -164,6 +173,7 @@ void MainWindow::sltRendererBackground(SysConfig::RendererBackground index)
 
 void MainWindow::sltFrameStart()
 {
+    qDebug("sltFrameStart");
     ui->lbPointNum->clear(); // 清空点云个数内容
 
     // 清除现有的点云显示
@@ -179,6 +189,7 @@ void MainWindow::sltFrameData(double x, double y, double z)
 
 void MainWindow::sltFrameEnd()
 {
+    qDebug("sltFrameEnd");
     if (points->GetNumberOfPoints() > 0) {
         if (ui->actPointCloudColor->isChecked()) {
             // 设置一个包含标量数据的数组的大小，使其与点云数据中的点数相匹配
@@ -209,7 +220,18 @@ void MainWindow::sltFrameEnd()
 
 void MainWindow::sltFrameQuit()
 {
+    qDebug("sltFrameQuit");
     ui->actReset->trigger();
+}
+
+void MainWindow::sltCtrlOutlineThread(bool state)
+{
+    outlineThread.setThreadFlag(state); // 设置线程运行标志
+    if (state) {
+        outlineThread.start(); // 启动线程
+    } else {
+        outlineThread.wait(); // 阻止线程执行，直到线程结束
+    }
 }
 
 void MainWindow::slt_actOpen_triggered()
@@ -238,10 +260,10 @@ void MainWindow::slt_actAutoRecv_toggled(bool arg1)
 {
 //    qDebug() << "arg1 " << arg1;
     if (arg1) {
-        UDPThread.bindPort(); // 绑定端口
+        udpThread.bindPort(); // 绑定端口
         SysConfig::setAutoRecv(true);
     } else {
-        UDPThread.unbindPort(); // 关闭套接字并释放绑定的端口
+        udpThread.unbindPort(); // 关闭套接字并释放绑定的端口
         SysConfig::setAutoRecv(false);
         ui->actReset->trigger();
     }
@@ -491,7 +513,7 @@ void MainWindow::initVTK()
     // 创建点云演员
     actor = vtkSmartPointer<vtkActor>::New();
     actor->SetMapper(mapper);
-    actor->GetProperty()->SetPointSize(4);
+//    actor->GetProperty()->SetPointSize(4);
     if (false == ui->actPointCloudColor->isChecked()) {
         actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 取消设置属性，恢复默认颜色
     }
@@ -598,13 +620,27 @@ void MainWindow::initSignalsAndSlots()
 
     /************ UDP 接收线程处理显示 ************/
     // 帧开始
-    connect(&UDPThread, &UDPRecvThread::sigFrameStart, this, &MainWindow::sltFrameStart);
+    connect(&udpThread, &UDPRecvThread::sigFrameStart, this, &MainWindow::sltFrameStart);
     // 帧数据
-    connect(&UDPThread, &UDPRecvThread::sigFrameData, this, &MainWindow::sltFrameData);
+    connect(&udpThread, &UDPRecvThread::sigFrameData, this, &MainWindow::sltFrameData);
     // 帧结束
-    connect(&UDPThread, &UDPRecvThread::sigFrameEnd, this, &MainWindow::sltFrameEnd);
+    connect(&udpThread, &UDPRecvThread::sigFrameEnd, this, &MainWindow::sltFrameEnd);
     // 程序退出
-    connect(&UDPThread, &UDPRecvThread::sigFrameQuit, this, &MainWindow::sltFrameQuit);
+    connect(&udpThread, &UDPRecvThread::sigFrameQuit, this, &MainWindow::sltFrameQuit);
+    // 机器人状态
+    connect(&udpThread, &UDPRecvThread::sigRobotState, &outlineThread, &OutlineImageThread::sltRobotState);
+    // 控制轮廓图像线程
+    connect(&udpThread, &UDPRecvThread::sigCtrlOutlineThread, this, &MainWindow::sltCtrlOutlineThread);
+
+    /************ 轮廓图像数据显示 ************/
+    // 轮廓重置
+    connect(&outlineThread, &OutlineImageThread::sigOutlineReset, this, &MainWindow::sltFrameQuit);
+    // 轮廓开始
+    connect(&outlineThread, &OutlineImageThread::sigOutlineStart, this, &MainWindow::sltFrameStart);
+    // 轮廓数据
+    connect(&outlineThread, &OutlineImageThread::sigOutlineData, this, &MainWindow::sltFrameData);
+    // 轮廓结束
+    connect(&outlineThread, &OutlineImageThread::sigOutlineEnd, this, &MainWindow::sltFrameEnd);
 }
 
 void MainWindow::setRendererBackground(SysConfig::RendererBackground index)
