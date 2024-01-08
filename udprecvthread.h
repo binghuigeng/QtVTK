@@ -90,6 +90,9 @@ private slots:
 
 private:
     /// @brief CRC16 校验函数
+    /// @param bytes 指向要计算 CRC 的数据的指针
+    /// @param len 要计算 CRC 的数据的长度
+    /// @return 计算得到的 CRC16 校验值
     unsigned short cal_crc(const unsigned char *bytes, int len);
 
     /// @brief 初始化存储

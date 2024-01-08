@@ -226,11 +226,14 @@ static const unsigned short crc16_table[256] = {
 
 unsigned short UDPRecvThread::cal_crc(const unsigned char *bytes, int len)
 {
-    unsigned short crc_check = 0;
+    unsigned short crc_check = 0; // 初始化 CRC 值为 0
+
     while (len--) {
+        // 取数据字节和当前 CRC 的高 8 位进行异或，并用结果作为查表索引
         crc_check = crc16_table[((crc_check >> 8) ^ *bytes++) & 0xff] ^ (crc_check << 8);
     }
-    return crc_check;
+
+    return crc_check; // 返回计算得到的 CRC 值
 }
 
 void UDPRecvThread::initStorage()

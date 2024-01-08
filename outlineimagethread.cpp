@@ -96,6 +96,8 @@ void OutlineImageThread::CallBackFunc(MV3D_LP_IMAGE_DATA *pstImageData, void *pU
                 // 存储设备上报的时间戳
                 memset(pOutline + totalOutlineSize, pstImageData->nTimeStamp, sizeof (int64_t));
                 totalOutlineSize += sizeof (int64_t);
+
+//                qDebug() << "nTimeStamp " << pstImageData->nTimeStamp;
             }
 //            qDebug("get image success: framenum (%d) height(%d) width(%d)  len (%d)!", pstImageData->nFrameNum,
 //                pstImageData->nHeight, pstImageData->nWidth, pstImageData->nDataLen);
@@ -157,11 +159,14 @@ void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size
     // 机器人实时坐标
     ROBOT_TNFO robot;
 
+    // 轮廓图像数据
+    Outline_IMAGE outline;
+
     // 计算出最小轮廓帧数量
     int minFrameNum = MIN(robotSize/sizeof (ROBOT_TNFO), outlineSize/(2048*6+8));
 
     qDebug("totalRobotSize(%d) totalOutlineSize(%d) minFrameNum(%d)", totalRobotSize, totalOutlineSize, minFrameNum);
-
+#if 0
     unsigned char *ptr = (unsigned char *)pOutline;
     int offset = 0;
     for (size_t i = 0; i < minFrameNum*2048; i++)
@@ -195,7 +200,7 @@ void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size
         int x_0 = ((short)(ptr[offset + 1] << 8) + (char)ptr[offset + 0]);
         int y_0 = ((short)(ptr[offset + 3] << 8) + (char)ptr[offset + 2]);
         int z_0 = ((short)(ptr[offset + 5] << 8) + (char)ptr[offset + 4]);
-//        qDebug("******PointCloud data: x(%d) y(%d) z (%d)!", x_0, y_0, z_0);
+        qDebug("******PointCloud data: x(%d) y(%d) z (%d)!", x_0, y_0, z_0);
         // 数据过滤
         if (x_0 != -32768 && y_0 != -32768 && z_0 != -32768)
         {
@@ -209,6 +214,70 @@ void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size
         }
         offset += 6;
     }
+#endif
+
+#if 1
+    for (int i = 0; i < minFrameNum; i++)
+    {
+        // 读取机器人实时坐标
+        memcpy(&robot, pRobot + i * sizeof (ROBOT_TNFO), sizeof (ROBOT_TNFO));
+        reverse_ROBOT_TNFO(&robot);
+#if 0
+        QString strMsg = QString("%1, %2, %3, %4, %5, %6 distance:%7 timestamp:%8 state:%9")
+                .arg(QString::number(robot.x, 'f', 6),
+                     QString::number(robot.y, 'f', 6),
+                     QString::number(robot.z, 'f', 6),
+                     QString::number(robot.w, 'f', 6),
+                     QString::number(robot.p, 'f', 6),
+                     QString::number(robot.r, 'f', 6),
+                     QString::number(robot.distance, 'f', 6),
+                     QString::number(robot.timestamp),
+                     QString::number(robot.state));
+        qDebug() << "unpack " << strMsg;
+#endif
+        // 计算出每帧轮廓数据所需的齐次变换矩阵
+        homogeneousTransform = Util::poseToMatrix(Eigen::Vector3d(robot.w, robot.p, robot.r),
+                                                  Eigen::Vector3d(robot.x, robot.y, robot.z));
+#if 0
+        for (int j = 0; j < 2048; j++)
+        {
+            // 读取轮廓图像
+            memcpy(&outline, pOutline + i*(2048*6+8) + j * sizeof (Outline_POS), sizeof (Outline_POS));
+
+//            qDebug("******PointCloud data: x(%d) y(%d) z (%d)!", outline.x, outline.y, outline.z);
+            // 数据过滤
+            if (outline.x != -32768 && outline.y != -32768 && outline.z != -32768)
+            {
+    //            qDebug("PointCloud data: x(%d) y(%d) z (%d)!", outline.x * 0.001 * 2, outline.y * 0.001 * 2, outline.z * 0.001 * 2);
+                Eigen::Vector4d pos = homogeneousTransform * Eigen::Vector4d(outline.x * 0.001 * 2,
+                                                                             outline.y * 0.001 * 2,
+                                                                             outline.z * 0.001 * 2,
+                                                                             1);
+                // 轮廓数据
+                emit sigOutlineData(pos(0), pos(1), pos(2));
+            }
+        }
+#endif
+
+        // 读取轮廓图像数据
+        memcpy(&outline, pOutline + i * sizeof (Outline_IMAGE), sizeof (Outline_IMAGE));
+        for (int j = 0; j < 2048; j++)
+        {
+//            qDebug("******PointCloud data: x(%d) y(%d) z (%d)!", outline.pos[i].x, outline.pos[i].y, outline.pos[i].z);
+            // 数据过滤
+            if (outline.pos[i].x != -32768 && outline.pos[i].y != -32768 && outline.pos[i].z != -32768)
+            {
+//                qDebug("PointCloud data: x(%d) y(%d) z (%d)!", outline.pos[i].x * 0.001 * 2, outline.pos[i].y * 0.001 * 2, outline.pos[i].z * 0.001 * 2);
+                Eigen::Vector4d pos = homogeneousTransform * Eigen::Vector4d(outline.pos[i].x * 0.001 * 2,
+                                                                             outline.pos[i].y * 0.001 * 2,
+                                                                             outline.pos[i].z * 0.001 * 2,
+                                                                             1);
+                // 轮廓数据
+                emit sigOutlineData(pos(0), pos(1), pos(2));
+            }
+        }
+    }
+#endif
 
     // 轮廓结束
     emit sigOutlineEnd();
