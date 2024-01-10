@@ -181,7 +181,7 @@ void MainWindow::sltFrameStart()
     vertices->Initialize();
 }
 
-void MainWindow::sltFrameData(double x, double y, double z)
+void MainWindow::sltFrameData(const double &x, const double &y, const double &z)
 {
     pid[0] = points->InsertNextPoint(x, y, z);
     vertices->InsertNextCell(1, pid);
@@ -224,10 +224,10 @@ void MainWindow::sltFrameQuit()
     ui->actReset->trigger();
 }
 
-void MainWindow::sltCtrlOutlineThread(bool state)
+void MainWindow::sltCtrlOutlineThread(const bool &enable)
 {
-    outlineThread.setThreadFlag(state); // 设置线程运行标志
-    if (state) {
+    outlineThread.setThreadFlag(enable); // 设置线程运行标志
+    if (enable) {
         outlineThread.start(); // 启动线程
     } else {
         outlineThread.wait(); // 阻止线程执行，直到线程结束
@@ -454,7 +454,7 @@ void MainWindow::initStatusbarMessage()
 
     // 创建一个标签并设置居中对齐
     statusLabel.setAlignment(Qt::AlignCenter);
-    statusLabel.setText("<a href=\"https://www.guchi-robotics.com\" style=\"text-decoration: none; color: #000000;\">Copyright 2022-2023 The guchi Company Ltd. All rights reserved.</a>");
+    statusLabel.setText("<a href=\"https://www.guchi-robotics.com\" style=\"text-decoration: none; color: #000000;\">Copyright 2022-2024 The guchi Company Ltd. All rights reserved.</a>");
     statusLabel.setOpenExternalLinks(true);
 
     // 将标签添加到状态栏，并设置其占用状态栏的比例为1

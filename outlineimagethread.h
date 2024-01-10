@@ -29,7 +29,7 @@ public:
 public slots:
     /// @brief 机器人状态
     /// @param state 状态 0:开始 1:运行中 2:结束
-    void sltRobotState(int state);
+    void sltRobotState(const int &state);
 
 protected:
     /// @brief 线程任务
@@ -46,7 +46,7 @@ signals:
     /// @param x 坐标 X
     /// @param y 坐标 Y
     /// @param z 坐标 Z
-    void sigOutlineData(double x, double y, double z);
+    void sigOutlineData(const double &x, const double &y, const double &z);
 
     /// @brief 轮廓结束
     void sigOutlineEnd();

@@ -3,13 +3,14 @@
 #include "util.h"
 #include <thread>
 #include <QDebug>
+#include <QDateTime>
 
 void __stdcall VirtualImageCallBack(MV3D_LP_IMAGE_DATA *pstImageData, void *pUser)
 {
     OutlineImageThread *pThis = (OutlineImageThread *)pUser;
     if (pThis)
     {
-        pThis->CallBackFunc(pstImageData,pUser);
+        pThis->CallBackFunc(pstImageData, pUser);
     }
 }
 
@@ -97,11 +98,11 @@ void OutlineImageThread::CallBackFunc(MV3D_LP_IMAGE_DATA *pstImageData, void *pU
                 memset(pOutline + totalOutlineSize, pstImageData->nTimeStamp, sizeof (int64_t));
                 totalOutlineSize += sizeof (int64_t);
 
-//                qDebug() << "nTimeStamp " << pstImageData->nTimeStamp;
+//                qDebug() << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz") << " nTimeStamp " << pstImageData->nTimeStamp;
             }
 //            qDebug("get image success: framenum (%d) height(%d) width(%d)  len (%d)!", pstImageData->nFrameNum,
 //                pstImageData->nHeight, pstImageData->nWidth, pstImageData->nDataLen);
-//            qDebug("get image success: timeStamp (%d)!\r\n", pstImageData->nTimeStamp);
+//            qDebug("get image success: timeStamp (%lld)!\r\n", pstImageData->nTimeStamp);
         } else if (2 == m_robot_state) {
             // 点云拼接
             pointCloudStitching(totalRobotSize, totalOutlineSize);
@@ -113,15 +114,15 @@ void OutlineImageThread::CallBackFunc(MV3D_LP_IMAGE_DATA *pstImageData, void *pU
     }
 }
 
-void OutlineImageThread::sltRobotState(int state)
+void OutlineImageThread::sltRobotState(const int &state)
 {
     m_robot_state = state;
 }
 
 void OutlineImageThread::run()
 {
-    while(m_thread_flag)//循环主体
-    {
+    // 循环主体
+    while (m_thread_flag) {
         ASSERT_OK(MV3D_LP_SoftTrigger(handle));
 #if 0
         msleep(8); // 线程休眠8ms
@@ -263,14 +264,14 @@ void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size
         memcpy(&outline, pOutline + i * sizeof (Outline_IMAGE), sizeof (Outline_IMAGE));
         for (int j = 0; j < 2048; j++)
         {
-//            qDebug("******PointCloud data: x(%d) y(%d) z (%d)!", outline.pos[i].x, outline.pos[i].y, outline.pos[i].z);
+//            qDebug("******PointCloud data: x(%d) y(%d) z (%d)!", outline.pos[j].x, outline.pos[j].y, outline.pos[j].z);
             // 数据过滤
-            if (outline.pos[i].x != -32768 && outline.pos[i].y != -32768 && outline.pos[i].z != -32768)
+            if (outline.pos[j].x != -32768 && outline.pos[j].y != -32768 && outline.pos[j].z != -32768)
             {
-//                qDebug("PointCloud data: x(%d) y(%d) z (%d)!", outline.pos[i].x * 0.001 * 2, outline.pos[i].y * 0.001 * 2, outline.pos[i].z * 0.001 * 2);
-                Eigen::Vector4d pos = homogeneousTransform * Eigen::Vector4d(outline.pos[i].x * 0.001 * 2,
-                                                                             outline.pos[i].y * 0.001 * 2,
-                                                                             outline.pos[i].z * 0.001 * 2,
+//                qDebug("PointCloud data: x(%d) y(%d) z (%d)!", outline.pos[j].x * 0.001 * 2, outline.pos[j].y * 0.001 * 2, outline.pos[j].z * 0.001 * 2);
+                Eigen::Vector4d pos = homogeneousTransform * Eigen::Vector4d(outline.pos[j].x * 0.001 * 2,
+                                                                             outline.pos[j].y * 0.001 * 2,
+                                                                             outline.pos[j].z * 0.001 * 2,
                                                                              1);
                 // 轮廓数据
                 emit sigOutlineData(pos(0), pos(1), pos(2));

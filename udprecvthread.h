@@ -67,7 +67,7 @@ signals:
     /// @param x 坐标 X
     /// @param y 坐标 Y
     /// @param z 坐标 Z
-    void sigFrameData(double x, double y, double z);
+    void sigFrameData(const double &x, const double &y, const double &z);
 
     /// @brief 帧结束
     void sigFrameEnd();
@@ -77,11 +77,11 @@ signals:
 
     /// @brief 机器人状态
     /// @param state 状态 0:开始 1:运行中 2:结束
-    void sigRobotState(int state);
+    void sigRobotState(const int &state);
 
     /// @brief 控制轮廓图像线程
-    /// @param state 状态 true:启动轮廓图像线程 false:结束轮廓图像线程
-    void sigCtrlOutlineThread(bool state);
+    /// @param enable 线程使能 true:启动轮廓图像线程 false:结束轮廓图像线程
+    void sigCtrlOutlineThread(const bool &enable);
 
 private slots:
     /// @brief 解析 UDP 传入的数据

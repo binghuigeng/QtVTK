@@ -107,8 +107,10 @@ void UDPRecvThread::unpackUDP(const QByteArray &datagram)
         // 发布机器人状态
         publishRobotState(robotState);
         if (0 == robotState) {
+#if 1
             // 启动轮廓图像线程
             emit sigCtrlOutlineThread(true);
+#endif
 
             timestampRobot = Util::ntohl(msg->timestamp); // 记录机器人数据时间戳
         } else if (1 == robotState) {
@@ -118,8 +120,10 @@ void UDPRecvThread::unpackUDP(const QByteArray &datagram)
                 totalRobotSize += datagram.size();
             }
         } else if (2 == robotState) {
+#if 1
             // 结束轮廓图像线程
             emit sigCtrlOutlineThread(false);
+#endif
         }
 #if 0
         QString strMsg = QString("%1, %2, %3, %4, %5, %6 distance:%7 timestamp:%8 state:%9")
@@ -256,8 +260,8 @@ void UDPRecvThread::publishRobotState(const int &state)
         if (0 == state) {
             initStorage(); // 初始化存储
         }
+        emit sigRobotState(state);
         lastState = state;
-        emit sigRobotState(lastState);
         qDebug("publishRobotState: %d", lastState);
     }
 }

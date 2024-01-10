@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(QtVTK VERSION 0.2.4 LANGUAGES CXX)
+project(QtVTK VERSION 0.2.5 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -15,6 +15,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
     set(CMAKE_C_FLAGS /utf-8)
     set(CMAKE_CXX_FLAGS /utf-8)
+
+    # 添加 /EHsc 选项，启用 C++ 异常处理和适当的展开语义
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 endif()
 
 # 确保调试和发布版本对将安装的可执行文件和库使用不同的名称。让我们使用 d 作为调试可执行文件和库的后缀。
