@@ -18,6 +18,7 @@ OutlineImageThread::OutlineImageThread(QObject *parent) : QThread(parent)
 {
     m_thread_flag = false; // 线程运行标志
     m_robot_state = -1; // 机器人状态
+    m_last_state = -1; // 上一次的机器人状态
 }
 
 OutlineImageThread::~OutlineImageThread()
@@ -85,10 +86,13 @@ void OutlineImageThread::CallBackFunc(MV3D_LP_IMAGE_DATA *pstImageData, void *pU
     if (NULL != pstImageData)
     {
         if (0 == m_robot_state) {
-            // 轮廓重置
-            emit sigOutlineReset();
-
-            timestampOutline = pstImageData->nTimeStamp; // 记录轮廓图像数据时戳
+            if (m_last_state != m_robot_state) {
+                timestampOutline = pstImageData->nTimeStamp; // 记录轮廓图像数据时戳
+                m_last_state = m_robot_state;
+                // 轮廓重置
+                emit sigOutlineReset();
+                qDebug("record timestamp");
+            }
         } else if (1 == m_robot_state) {
             if (totalOutlineSize + pstImageData->nDataLen + sizeof (int64_t) <= MAX_SIZE) {
                 // 使用 memcpy 进行内存拷贝，存储图像数据
@@ -104,6 +108,8 @@ void OutlineImageThread::CallBackFunc(MV3D_LP_IMAGE_DATA *pstImageData, void *pU
 //                pstImageData->nHeight, pstImageData->nWidth, pstImageData->nDataLen);
 //            qDebug("get image success: timeStamp (%lld)!\r\n", pstImageData->nTimeStamp);
         } else if (2 == m_robot_state) {
+            m_robot_state = -1;
+            m_last_state = -1;
             // 点云拼接
             pointCloudStitching(totalRobotSize, totalOutlineSize);
         }
@@ -167,59 +173,16 @@ void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size
     int minFrameNum = MIN(robotSize/sizeof (ROBOT_TNFO), outlineSize/(2048*6+8));
 
     qDebug("totalRobotSize(%d) totalOutlineSize(%d) minFrameNum(%d)", totalRobotSize, totalOutlineSize, minFrameNum);
-#if 0
-    unsigned char *ptr = (unsigned char *)pOutline;
-    int offset = 0;
-    for (size_t i = 0; i < minFrameNum*2048; i++)
-    {
-        // 判断是否需要更新齐次变换矩阵
-        if (0 == (i % 2048)) {
-            // 读取机器人数据
-            memcpy(&robot, pRobot + (i / 2048) * sizeof (ROBOT_TNFO), sizeof (ROBOT_TNFO));
-            reverse_ROBOT_TNFO(&robot);
-#if 0
-            QString strMsg = QString("%1, %2, %3, %4, %5, %6 distance:%7 timestamp:%8 state:%9")
-                    .arg(QString::number(robot.x, 'f', 6),
-                         QString::number(robot.y, 'f', 6),
-                         QString::number(robot.z, 'f', 6),
-                         QString::number(robot.w, 'f', 6),
-                         QString::number(robot.p, 'f', 6),
-                         QString::number(robot.r, 'f', 6),
-                         QString::number(robot.distance, 'f', 6),
-                         QString::number(robot.timestamp),
-                         QString::number(robot.state));
-            qDebug() << "unpack " << strMsg;
-#endif
-            // 计算出每帧轮廓数据所需的齐次变换矩阵
-            homogeneousTransform = Util::poseToMatrix(Eigen::Vector3d(robot.w, robot.p, robot.r),
-                                                      Eigen::Vector3d(robot.x, robot.y, robot.z));
-            if (i != 0) {
-                offset += 8;
-            }
-        }
-
-        int x_0 = ((short)(ptr[offset + 1] << 8) + (char)ptr[offset + 0]);
-        int y_0 = ((short)(ptr[offset + 3] << 8) + (char)ptr[offset + 2]);
-        int z_0 = ((short)(ptr[offset + 5] << 8) + (char)ptr[offset + 4]);
-        qDebug("******PointCloud data: x(%d) y(%d) z (%d)!", x_0, y_0, z_0);
-        // 数据过滤
-        if (x_0 != -32768 && y_0 != -32768 && z_0 != -32768)
-        {
-//            qDebug("PointCloud data: x(%d) y(%d) z (%d)!", x_0 * 0.001 * 2, y_0 * 0.001 * 2, z_0 * 0.001 * 2);
-            Eigen::Vector4d pos = homogeneousTransform * Eigen::Vector4d(x_0 * 0.001 * 2,
-                                                                         y_0 * 0.001 * 2,
-                                                                         z_0 * 0.001 * 2,
-                                                                         1);
-            // 轮廓数据
-            emit sigOutlineData(pos(0), pos(1), pos(2));
-        }
-        offset += 6;
-    }
-#endif
-
 #if 1
+    int index = 0;
     for (int i = 0; i < minFrameNum; i++)
     {
+        // 若索引不小于帧数量，则结束循环
+        if (index >= minFrameNum)
+        {
+            break;
+        }
+
         // 读取机器人实时坐标
         memcpy(&robot, pRobot + i * sizeof (ROBOT_TNFO), sizeof (ROBOT_TNFO));
         reverse_ROBOT_TNFO(&robot);
@@ -239,44 +202,50 @@ void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size
         // 计算出每帧轮廓数据所需的齐次变换矩阵
         homogeneousTransform = Util::poseToMatrix(Eigen::Vector3d(robot.w, robot.p, robot.r),
                                                   Eigen::Vector3d(robot.x, robot.y, robot.z));
-#if 0
-        for (int j = 0; j < 2048; j++)
-        {
-            // 读取轮廓图像
-            memcpy(&outline, pOutline + i*(2048*6+8) + j * sizeof (Outline_POS), sizeof (Outline_POS));
+        // 读取轮廓图像数据
+        memcpy(&outline, pOutline + index * sizeof (Outline_IMAGE), sizeof (Outline_IMAGE));
 
-//            qDebug("******PointCloud data: x(%d) y(%d) z (%d)!", outline.x, outline.y, outline.z);
-            // 数据过滤
-            if (outline.x != -32768 && outline.y != -32768 && outline.z != -32768)
+        // 计算时间戳差值
+        int stepSize = abs(robot.timestamp - (outline.timestamp - timestampOutline));
+
+        // 计算离第 i 帧机器人实时坐标最近的轮廓图像数据索引
+        for (int j = index+1; j < minFrameNum; j++)
+        {
+            // 读取轮廓图像数据
+            memcpy(&outline, pOutline + j * sizeof (Outline_IMAGE), sizeof (Outline_IMAGE));
+
+            // 计算时间戳差值
+            if (abs(robot.timestamp - (outline.timestamp - timestampOutline)) > stepSize)
             {
-    //            qDebug("PointCloud data: x(%d) y(%d) z (%d)!", outline.x * 0.001 * 2, outline.y * 0.001 * 2, outline.z * 0.001 * 2);
-                Eigen::Vector4d pos = homogeneousTransform * Eigen::Vector4d(outline.x * 0.001 * 2,
-                                                                             outline.y * 0.001 * 2,
-                                                                             outline.z * 0.001 * 2,
-                                                                             1);
-                // 轮廓数据
-                emit sigOutlineData(pos(0), pos(1), pos(2));
+                break;
             }
+            stepSize = abs(robot.timestamp - (outline.timestamp - timestampOutline));
+            index = j;
         }
-#endif
+
+        // 读取离第 i 帧机器人实时坐标最近的轮廓图像数据
+        memcpy(&outline, pOutline + index * sizeof (Outline_IMAGE), sizeof (Outline_IMAGE));
 
         // 读取轮廓图像数据
-        memcpy(&outline, pOutline + i * sizeof (Outline_IMAGE), sizeof (Outline_IMAGE));
-        for (int j = 0; j < 2048; j++)
+        for (int k = 0; k < 2048; k++)
         {
-//            qDebug("******PointCloud data: x(%d) y(%d) z (%d)!", outline.pos[j].x, outline.pos[j].y, outline.pos[j].z);
+//            qDebug("******PointCloud data: x(%d) y(%d) z (%d)!", outline.pos[k].x, outline.pos[k].y, outline.pos[k].z);
             // 数据过滤
-            if (outline.pos[j].x != -32768 && outline.pos[j].y != -32768 && outline.pos[j].z != -32768)
+            if (outline.pos[k].x != -32768 && outline.pos[k].y != -32768 && outline.pos[k].z != -32768)
             {
-//                qDebug("PointCloud data: x(%d) y(%d) z (%d)!", outline.pos[j].x * 0.001 * 2, outline.pos[j].y * 0.001 * 2, outline.pos[j].z * 0.001 * 2);
-                Eigen::Vector4d pos = homogeneousTransform * Eigen::Vector4d(outline.pos[j].x * 0.001 * 2,
-                                                                             outline.pos[j].y * 0.001 * 2,
-                                                                             outline.pos[j].z * 0.001 * 2,
+//                qDebug("PointCloud data: x(%d) y(%d) z (%d)!", outline.pos[k].x * 0.001 * 2, outline.pos[k].y * 0.001 * 2, outline.pos[k].z * 0.001 * 2);
+                Eigen::Vector4d pos = homogeneousTransform * Eigen::Vector4d(outline.pos[k].x * 0.001 * 2,
+                                                                             outline.pos[k].y * 0.001 * 2,
+                                                                             outline.pos[k].z * 0.001 * 2,
                                                                              1);
                 // 轮廓数据
+//                emit sigOutlineData(outline.pos[k].x * 0.001 * 2, outline.pos[k].y * 0.001 * 2, outline.pos[k].z * 0.001 * 2);
                 emit sigOutlineData(pos(0), pos(1), pos(2));
             }
         }
+
+        // 轮廓图像数据索引加一
+        index++;
     }
 #endif
 

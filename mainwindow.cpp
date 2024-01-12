@@ -220,7 +220,6 @@ void MainWindow::sltFrameEnd()
 
 void MainWindow::sltFrameQuit()
 {
-    qDebug("sltFrameQuit");
     ui->actReset->trigger();
 }
 

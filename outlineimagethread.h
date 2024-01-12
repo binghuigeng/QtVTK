@@ -64,6 +64,9 @@ private:
     /// @brief 机器人状态
     int m_robot_state;
 
+    /// @brief 上一次的机器人状态
+    int m_last_state;
+
     /// @brief 设备句柄
     void *handle;
 };

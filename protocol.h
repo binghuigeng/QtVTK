@@ -3,7 +3,7 @@
 
 #include <QObject>
 
-#define MAX_SIZE 50*1024*1024
+#define MAX_SIZE 100*1024*1024
 
 extern char pRobot[MAX_SIZE];
 extern char pOutline[MAX_SIZE];

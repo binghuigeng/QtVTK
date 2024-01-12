@@ -107,7 +107,7 @@ void UDPRecvThread::unpackUDP(const QByteArray &datagram)
         // 发布机器人状态
         publishRobotState(robotState);
         if (0 == robotState) {
-#if 1
+#if 0
             // 启动轮廓图像线程
             emit sigCtrlOutlineThread(true);
 #endif
@@ -120,7 +120,7 @@ void UDPRecvThread::unpackUDP(const QByteArray &datagram)
                 totalRobotSize += datagram.size();
             }
         } else if (2 == robotState) {
-#if 1
+#if 0
             // 结束轮廓图像线程
             emit sigCtrlOutlineThread(false);
 #endif
