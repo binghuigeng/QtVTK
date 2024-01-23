@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(QtVTK VERSION 0.2.5 LANGUAGES CXX)
+project(QtVTK VERSION 0.2.6 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -54,9 +54,8 @@ find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
 # Mv3dLpSDK
-include_directories(D:/3DMVS/Development/Mv3dLpSDK/Include)
-include_directories(D:/3DMVS/Development/Mv3dLpSDK/Sample/C)
-link_directories(D:/3DMVS/Development/Mv3dLpSDK/Lib/win64)
+include_directories(D:/Install/Mv3dLp/include)
+link_directories(D:/Install/Mv3dLp/lib)
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets Network REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Network REQUIRED)
@@ -103,7 +102,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
 # 链接 VTK
 target_link_libraries(${PROJECT_NAME} PRIVATE ${VTK_LIBRARIES})
 # 链接 Mv3dLpSDK
-target_link_libraries(${PROJECT_NAME} PRIVATE Mv3dLp.lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE Mv3dLp)
 # 链接自定义对话框
 target_link_libraries(${PROJECT_NAME} PUBLIC Config CustomizeDialog)
 

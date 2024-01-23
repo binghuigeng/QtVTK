@@ -215,6 +215,9 @@ void MainWindow::sltFrameEnd()
 
         // 刷新渲染窗口以显示新的点云数据
         renderWindow->Render();
+
+        // 显示点云信息
+        showPointCloudInfo(points->GetNumberOfPoints());
     }
 }
 
@@ -329,6 +332,9 @@ void MainWindow::slt_actAdd_triggered()
 
     // 刷新渲染窗口以显示新的点云数据
     renderWindow->Render();
+
+    // 显示点云信息
+    showPointCloudInfo(points->GetNumberOfPoints());
 }
 
 void MainWindow::slt_actRestart_triggered()
@@ -715,11 +721,16 @@ void MainWindow::showPointCloud(QString fileName)
     // 刷新渲染窗口以显示新的点云数据
     renderWindow->Render();
 
-    // 显示点云文件信息
-    showPointCloudFile(fileName, reader->GetOutput()->GetNumberOfPoints());
+    // 显示点云信息
+    showPointCloudInfo(fileName, reader->GetOutput()->GetNumberOfPoints());
 }
 
-void MainWindow::showPointCloudFile(QString fileName, vtkIdType numberOfPoints)
+void MainWindow::showPointCloudInfo(QString fileName, vtkIdType numberOfPoints)
 {
     ui->lbPointNum->setText(QString("打开文件：%1    点云个数：%2").arg(fileName).arg(numberOfPoints));
+}
+
+void MainWindow::showPointCloudInfo(vtkIdType numberOfPoints)
+{
+    ui->lbPointNum->setText(QString("点云个数：%1").arg(numberOfPoints));
 }

@@ -160,10 +160,14 @@ private:
     /// @param fileName 文件路径
     void showPointCloud(QString fileName);
 
-    /// @brief 显示点云文件信息
+    /// @brief 显示点云信息
     /// @param fileName 文件路径
     /// @param numberOfPoints 点云个数
-    void showPointCloudFile(QString fileName, vtkIdType numberOfPoints);
+    void showPointCloudInfo(QString fileName, vtkIdType numberOfPoints);
+
+    /// @brief 显示点云信息
+    /// @param numberOfPoints 点云个数
+    void showPointCloudInfo(vtkIdType numberOfPoints);
 
 private:
     Ui::MainWindow *ui;

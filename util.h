@@ -24,7 +24,9 @@ static union
     (PACKET->MEMBER = FUNC(PACKET->MEMBER))
 
 /// @brief 使用宏来定义一个计算最小值的函数
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#ifndef MIN
+#define MIN(A, B) ((A) < (B) ? (A) : (B))
+#endif
 
 #include <QObject>
 #include <Eigen/Dense>

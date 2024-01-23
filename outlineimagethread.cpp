@@ -85,6 +85,9 @@ void OutlineImageThread::CallBackFunc(MV3D_LP_IMAGE_DATA *pstImageData, void *pU
 {
     if (NULL != pstImageData)
     {
+//        qDebug("get image success: framenum (%d) height(%d) width(%d)  len (%d)!", pstImageData->nFrameNum,
+//            pstImageData->nHeight, pstImageData->nWidth, pstImageData->nDataLen);
+//        qDebug("get image success: timeStamp (%lld)!\r\n", pstImageData->nTimeStamp);
         if (0 == m_robot_state) {
             if (m_last_state != m_robot_state) {
                 timestampOutline = pstImageData->nTimeStamp; // 记录轮廓图像数据时戳
@@ -99,7 +102,7 @@ void OutlineImageThread::CallBackFunc(MV3D_LP_IMAGE_DATA *pstImageData, void *pU
                 memcpy(pOutline + totalOutlineSize, pstImageData->pData, pstImageData->nDataLen);
                 totalOutlineSize += pstImageData->nDataLen;
                 // 存储设备上报的时间戳
-                memset(pOutline + totalOutlineSize, pstImageData->nTimeStamp, sizeof (int64_t));
+                memcpy(pOutline + totalOutlineSize, &pstImageData->nTimeStamp, sizeof (int64_t));
                 totalOutlineSize += sizeof (int64_t);
 
 //                qDebug() << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz") << " nTimeStamp " << pstImageData->nTimeStamp;
@@ -157,8 +160,26 @@ void OutlineImageThread::run()
 
 void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size_t &outlineSize)
 {
+    /*****************************************************************************
+    ** 点云拼接规则
+    ** 机器人实时坐标(4*4) * 滚压头求逆(4*4) * 线扫相机(4*4) * 线扫相机轮廓图像数据(4*1)
+    *****************************************************************************/
     // 轮廓开始
     emit sigOutlineStart();
+
+    // 机器人实时坐标的齐次变换矩阵
+    Eigen::Matrix4d robotMatrix = Eigen::Matrix4d::Identity();
+
+    // 滚压头的齐次变换矩阵
+    Eigen::Matrix4d rollHeadMatrix = Util::poseToMatrix(Eigen::Vector3d(-90.146, 0.071, 150.123),
+                                                        Eigen::Vector3d(-111.651, -226.086, 512.811));
+
+    // 滚压头的齐次变换矩阵的逆矩阵
+    Eigen::Matrix4d rollHeadMatrixInverse = rollHeadMatrix.inverse();
+
+    // 线扫相机的齐次变换矩阵
+    Eigen::Matrix4d lineScanCameraMatrix = Util::poseToMatrix(Eigen::Vector3d(-180.000, 53.017, -120.016),
+                                                              Eigen::Vector3d(-52.754, -232.347, 492.449));
 
     // 初始化齐次变换矩阵
     Eigen::Matrix4d homogeneousTransform = Eigen::Matrix4d::Identity();
@@ -172,7 +193,7 @@ void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size
     // 计算出最小轮廓帧数量
     int minFrameNum = MIN(robotSize/sizeof (ROBOT_TNFO), outlineSize/(2048*6+8));
 
-    qDebug("totalRobotSize(%d) totalOutlineSize(%d) minFrameNum(%d)", totalRobotSize, totalOutlineSize, minFrameNum);
+    qDebug("totalRobotSize(%llu) totalOutlineSize(%llu) minFrameNum(%d)", totalRobotSize, totalOutlineSize, minFrameNum);
 #if 1
     int index = 0;
     for (int i = 0; i < minFrameNum; i++)
@@ -199,14 +220,20 @@ void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size
                      QString::number(robot.state));
         qDebug() << "unpack " << strMsg;
 #endif
+        // 计算出每帧机器人实时坐标的齐次变换矩阵
+        robotMatrix = Util::poseToMatrix(Eigen::Vector3d(robot.w, robot.p, robot.r),
+                                         Eigen::Vector3d(robot.x, robot.y, robot.z));
         // 计算出每帧轮廓数据所需的齐次变换矩阵
-        homogeneousTransform = Util::poseToMatrix(Eigen::Vector3d(robot.w, robot.p, robot.r),
-                                                  Eigen::Vector3d(robot.x, robot.y, robot.z));
+        homogeneousTransform = robotMatrix * rollHeadMatrixInverse * lineScanCameraMatrix;
+//        homogeneousTransform = robotMatrix * rollHeadMatrix * lineScanCameraMatrix;
+//        homogeneousTransform = robotMatrix * rollHeadMatrixInverse;
+//        homogeneousTransform = robotMatrix;
+
         // 读取轮廓图像数据
         memcpy(&outline, pOutline + index * sizeof (Outline_IMAGE), sizeof (Outline_IMAGE));
 
         // 计算时间戳差值
-        int stepSize = abs(robot.timestamp - (outline.timestamp - timestampOutline));
+        long long stepSize = abs((outline.timestamp - timestampOutline) - (robot.timestamp - timestampRobot));
 
         // 计算离第 i 帧机器人实时坐标最近的轮廓图像数据索引
         for (int j = index+1; j < minFrameNum; j++)
@@ -215,11 +242,11 @@ void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size
             memcpy(&outline, pOutline + j * sizeof (Outline_IMAGE), sizeof (Outline_IMAGE));
 
             // 计算时间戳差值
-            if (abs(robot.timestamp - (outline.timestamp - timestampOutline)) > stepSize)
+            if (abs((outline.timestamp - timestampOutline) - (robot.timestamp - timestampRobot)) > stepSize)
             {
                 break;
             }
-            stepSize = abs(robot.timestamp - (outline.timestamp - timestampOutline));
+            stepSize = abs((outline.timestamp - timestampOutline) - (robot.timestamp - timestampRobot));
             index = j;
         }
 
@@ -238,6 +265,10 @@ void OutlineImageThread::pointCloudStitching(const size_t &robotSize, const size
                                                                              outline.pos[k].y * 0.001 * 2,
                                                                              outline.pos[k].z * 0.001 * 2,
                                                                              1);
+//                Eigen::Vector4d pos = homogeneousTransform * (lineScanCameraMatrix * Eigen::Vector4d(outline.pos[k].x * 0.001 * 2,
+//                                                                                                     outline.pos[k].y * 0.001 * 2,
+//                                                                                                     outline.pos[k].z * 0.001 * 2,
+//                                                                                                     1));
                 // 轮廓数据
 //                emit sigOutlineData(outline.pos[k].x * 0.001 * 2, outline.pos[k].y * 0.001 * 2, outline.pos[k].z * 0.001 * 2);
                 emit sigOutlineData(pos(0), pos(1), pos(2));
