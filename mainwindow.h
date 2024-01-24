@@ -17,6 +17,7 @@
 
 /// @brief VTK headers
 #include <vtkPLYReader.h>
+#include <vtkPLYWriter.h>
 #include <vtkSmartPointer.h>
 #include <vtkPoints.h>
 #include <vtkCellArray.h>
@@ -160,6 +161,9 @@ private:
     /// @param fileName 文件路径
     void showPointCloud(QString fileName);
 
+    /// @brief 保存ply格式的点云文件
+    void savePointCloudFile();
+
     /// @brief 显示点云信息
     /// @param fileName 文件路径
     /// @param numberOfPoints 点云个数
@@ -201,6 +205,7 @@ private:
     vtkIdType pid[1]; // 存储一个点的标识符
     double bounds[6]; // 获取数据范围
     vtkSmartPointer<vtkPLYReader> reader; // 读取PLY文件
+    vtkSmartPointer<vtkPLYWriter> writer; // 保存PLY文件
     vtkSmartPointer<vtkPoints> points; // 点云数据
     vtkSmartPointer<vtkCellArray> vertices; // 顶点
     vtkSmartPointer<vtkFloatArray> scalars; // 标量数据

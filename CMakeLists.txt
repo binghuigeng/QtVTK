@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(QtVTK VERSION 0.2.6 LANGUAGES CXX)
+project(QtVTK VERSION 0.2.7 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -32,15 +32,18 @@ endif()
 configure_file(${CMAKE_SOURCE_DIR}/Config/ProjectConfig.h.in ProjectConfig.h)
 
 # VTK
-#find_package(VTK COMPONENTS
-#    vtkCommonCore
-#    vtkGUISupportQt
-#    vtkGUISupportQtOpenGL
-#    vtkRenderingOpenGL2
-#    vtkIOImage
-#    vtkInteractionImage
-#)
-find_package(VTK REQUIRED)
+find_package(VTK COMPONENTS
+    vtkIOPLY
+    vtkCommonCore
+    vtkCommonDataModel
+    vtkRenderingCore
+    vtkRenderingAnnotation
+    vtkRenderingOpenGL2
+    vtkGUISupportQt
+    vtkInteractionWidgets
+    vtkInteractionStyle
+)
+#find_package(VTK REQUIRED)
 include(${VTK_USE_FILE})
 
 if("${VTK_QT_VERSION}" STREQUAL "")

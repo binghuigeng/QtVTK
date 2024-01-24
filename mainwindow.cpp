@@ -8,6 +8,7 @@
 #include <vtkTextProperty.h>
 #include <vtkProp3DCollection.h>
 
+#include <QDateTime>
 #include <QCloseEvent>
 #include <QFileDialog>
 #include <QProcess>
@@ -215,6 +216,9 @@ void MainWindow::sltFrameEnd()
 
         // 刷新渲染窗口以显示新的点云数据
         renderWindow->Render();
+
+        // 保存ply格式的点云文件
+        savePointCloudFile();
 
         // 显示点云信息
         showPointCloudInfo(points->GetNumberOfPoints());
@@ -468,6 +472,14 @@ void MainWindow::initStatusbarMessage()
 
 void MainWindow::initVTK()
 {
+    // 读取PLY文件
+    reader = vtkSmartPointer<vtkPLYReader>::New();
+
+    // 保存PLY文件
+    writer = vtkSmartPointer<vtkPLYWriter>::New();
+//    writer->AddComment("This is a custom comment line."); // 添加注释信息
+    writer->SetFileTypeToASCII(); // 设置文件类型为 ASCII
+
     // 创建点云数据
     points = vtkSmartPointer<vtkPoints>::New();
     // 创建顶点
@@ -677,7 +689,6 @@ void MainWindow::showPointCloud(QString fileName)
     vertices->Initialize();
 
     // 读取 ply 文件
-    reader = vtkSmartPointer<vtkPLYReader>::New();
     reader->SetFileName(fileName.toStdString().c_str());
     reader->Update();
 
@@ -723,6 +734,14 @@ void MainWindow::showPointCloud(QString fileName)
 
     // 显示点云信息
     showPointCloudInfo(fileName, reader->GetOutput()->GetNumberOfPoints());
+}
+
+void MainWindow::savePointCloudFile()
+{
+    // 保存ply格式的点云文件
+    writer->SetFileName(QString("%1.ply").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh_mm_ss.zzz")).toStdString().c_str());
+    writer->SetInputData(polydata); // 设置输入数据
+    writer->Write();
 }
 
 void MainWindow::showPointCloudInfo(QString fileName, vtkIdType numberOfPoints)
