@@ -22,6 +22,7 @@
 #include <vtkPoints.h>
 #include <vtkCellArray.h>
 #include <vtkFloatArray.h>
+#include <vtkUnsignedCharArray.h>
 #include <vtkPolyData.h>
 #include <vtkLookupTable.h>
 #include <vtkPolyDataMapper.h>
@@ -132,7 +133,7 @@ private slots:
 
     /// @brief 窗口询问改变
     /// @param state 窗口询问状态
-    void slt_chkInquiry_stateChanged(int state);
+    void slt_chbInquiry_stateChanged(int state);
 
 private:
     /// @brief 初始化
@@ -192,7 +193,7 @@ private:
     QMessageBox msgBox;
     QPushButton *btnAccept;
     QPushButton *btnReject;
-    QCheckBox chkInquiry;
+    QCheckBox chbInquiry;
     bool bAcceptClose;
 
     /// @brief UDP 接收线程
@@ -200,6 +201,9 @@ private:
 
     /// @brief 轮廓数据
     OutlineImageThread outlineThread;
+
+    /// @brief 点云颜色显示依据
+    bool bColorBasis;
 
     /// @brief VTK variables
     vtkIdType pid[1]; // 存储一个点的标识符
@@ -209,6 +213,7 @@ private:
     vtkSmartPointer<vtkPoints> points; // 点云数据
     vtkSmartPointer<vtkCellArray> vertices; // 顶点
     vtkSmartPointer<vtkFloatArray> scalars; // 标量数据
+    vtkSmartPointer<vtkUnsignedCharArray> colors; // 颜色数组
     vtkSmartPointer<vtkPolyData> polydata; // 多边形数据
     vtkSmartPointer<vtkLookupTable> lut; // 颜色映射
     vtkSmartPointer<vtkPolyDataMapper> mapper; // 点云映射器

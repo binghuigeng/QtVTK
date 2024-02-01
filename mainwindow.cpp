@@ -48,14 +48,14 @@ MainWindow::MainWindow(QWidget *parent)
     if (SysConfig::getWindowTop()) {
         this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint); // 窗口置顶
     }
-    this->setWindowTitle("点云编辑器 - guchi"); // 设置窗口标题
+    this->setWindowTitle("复检软件"); // 设置窗口标题
 
     initial(); // 初始化
+    initSysConfig(); // 初始化配置
     initCloseWindow(); // 初始化关闭窗口
     initStatusbarMessage(); // 初始化状态栏显示消息
     initSignalsAndSlots(); // 初始化信号与槽函数
     initVTK(); // 初始化VTK
-    initSysConfig(); // 初始化配置
 }
 
 MainWindow::~MainWindow()
@@ -192,17 +192,32 @@ void MainWindow::sltFrameEnd()
 {
     qDebug("sltFrameEnd");
     if (points->GetNumberOfPoints() > 0) {
-        if (ui->actPointCloudColor->isChecked()) {
-            // 设置一个包含标量数据的数组的大小，使其与点云数据中的点数相匹配
-            scalars->SetNumberOfTuples(points->GetNumberOfPoints());
-            // 插入顶点 创建一个包含单个顶点的单元，并将点云数据中的每个点与这些单元关联起来，从而定义了点云数据的拓扑结构
-            for (int i = 0; i < points->GetNumberOfPoints(); i++)
-            {
-                scalars->SetValue(i, points->GetPoint(i)[2]); // 将 z 值设置为标量值
+        if (bColorBasis) {
+            if (ui->actPointCloudColor->isChecked()) {
+                // 设置一个包含标量数据的数组的大小，使其与点云数据中的点数相匹配
+                scalars->SetNumberOfTuples(points->GetNumberOfPoints());
+                // 插入顶点 创建一个包含单个顶点的单元，并将点云数据中的每个点与这些单元关联起来，从而定义了点云数据的拓扑结构
+                for (vtkIdType i = 0; i < points->GetNumberOfPoints(); i++)
+                {
+                    scalars->SetValue(i, points->GetPoint(i)[2]); // 将 z 值设置为标量值
+                }
+            } else {
+                scalars->Initialize();
+                actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 取消设置属性，恢复默认颜色
             }
         } else {
-            scalars->Initialize();
-            actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 取消设置属性，恢复默认颜色
+            // 设置颜色
+            colors->SetNumberOfTuples(points->GetNumberOfPoints());
+            for (vtkIdType i = 0; i < points->GetNumberOfPoints(); i++)
+            {
+                if (0 == i % 3) {
+                    colors->SetTuple3(i, 0, 255, 0); // 绿色
+                } else if (1 == i % 3) {
+                    colors->SetTuple3(i, 255, 0, 0); // 红色
+                } else {
+                    colors->SetTuple3(i, 255, 255, 0); // 黄色
+                }
+            }
         }
 
         polydata->GetBounds(bounds);
@@ -312,17 +327,32 @@ void MainWindow::slt_actAdd_triggered()
     pid[0] = points->InsertNextPoint(0.0, 0.0, 1.0);
     vertices->InsertNextCell(1, pid);
 
-    if (ui->actPointCloudColor->isChecked()) {
-        // 设置一个包含标量数据的数组的大小，使其与点云数据中的点数相匹配
-        scalars->SetNumberOfTuples(points->GetNumberOfPoints());
-        // 插入顶点 创建一个包含单个顶点的单元，并将点云数据中的每个点与这些单元关联起来，从而定义了点云数据的拓扑结构
-        for (int i = 0; i < points->GetNumberOfPoints(); i++)
-        {
-            scalars->SetValue(i, points->GetPoint(i)[2]); // 将 z 值设置为标量值
+    if (bColorBasis) {
+        if (ui->actPointCloudColor->isChecked()) {
+            // 设置一个包含标量数据的数组的大小，使其与点云数据中的点数相匹配
+            scalars->SetNumberOfTuples(points->GetNumberOfPoints());
+            // 插入顶点 创建一个包含单个顶点的单元，并将点云数据中的每个点与这些单元关联起来，从而定义了点云数据的拓扑结构
+            for (vtkIdType i = 0; i < points->GetNumberOfPoints(); i++)
+            {
+                scalars->SetValue(i, points->GetPoint(i)[2]); // 将 z 值设置为标量值
+            }
+        } else {
+            scalars->Initialize();
+            actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 取消设置属性，恢复默认颜色
         }
     } else {
-        scalars->Initialize();
-        actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 取消设置属性，恢复默认颜色
+        // 设置颜色
+        colors->SetNumberOfTuples(points->GetNumberOfPoints());
+        for (vtkIdType i = 0; i < points->GetNumberOfPoints(); i++)
+        {
+            if (0 == i % 3) {
+                colors->SetTuple3(i, 0, 255, 0); // 绿色
+            } else if (1 == i % 3) {
+                colors->SetTuple3(i, 255, 0, 0); // 红色
+            } else {
+                colors->SetTuple3(i, 255, 255, 0); // 黄色
+            }
+        }
     }
 
     polydata->GetBounds(bounds);
@@ -404,7 +434,7 @@ void MainWindow::buttonClicked(QAbstractButton *butClicked)
     }
 }
 
-void MainWindow::slt_chkInquiry_stateChanged(int state)
+void MainWindow::slt_chbInquiry_stateChanged(int state)
 {
     if (state == Qt::Checked) {
         SysConfig::setWindowClose(false);
@@ -427,11 +457,17 @@ void MainWindow::initSysConfig()
     // 设置界面参数显示
     dlgSet.setControlShow(SysConfig::getWindowTop(), SysConfig::getWindowClose(), SysConfig::getRendererBackground());
 
-    // 点云颜色显示
+    // 点云颜色选中状态
     ui->actPointCloudColor->setChecked(SysConfig::getPointCloudColor());
+
+    // 点云颜色显示
+    ui->actPointCloudColor->setVisible(SysConfig::getPointCloudColorBasis());
 
     // 自动接收显示
     ui->actAutoRecv->setChecked(SysConfig::getAutoRecv());
+
+    // 点云颜色显示依据
+    bColorBasis = SysConfig::getPointCloudColorBasis();
 }
 
 void MainWindow::initCloseWindow()
@@ -444,9 +480,9 @@ void MainWindow::initCloseWindow()
     btnAccept = msgBox.addButton("是(Y)", QMessageBox::AcceptRole); // 使用给定文本创建一个按钮，将其添加到指定角色的消息框中
     btnReject = msgBox.addButton("否(N)", QMessageBox::RejectRole); // 使用给定文本创建一个按钮，将其添加到指定角色的消息框中
     msgBox.setDefaultButton(btnAccept); // 设置消息对话框的默认按钮，即按下回车键会触发的按钮
-//    chkInquiry = new QCheckBox("不再询问", &msgBox);
-    chkInquiry.setText("不再询问");
-    msgBox.setCheckBox(&chkInquiry); // 设置消息对话框的复选框
+//    chbInquiry = new QCheckBox("不再询问", &msgBox);
+    chbInquiry.setText("不再询问");
+    msgBox.setCheckBox(&chbInquiry); // 设置消息对话框的复选框
     /********************************************************************************
     ** @brief 设置窗口的模态性与设置窗口的标志执行顺序不能互换，否则会引发一连串问题
     **
@@ -463,7 +499,7 @@ void MainWindow::initStatusbarMessage()
 
     // 创建一个标签并设置居中对齐
     statusLabel.setAlignment(Qt::AlignCenter);
-    statusLabel.setText("<a href=\"https://www.guchi-robotics.com\" style=\"text-decoration: none; color: #000000;\">Copyright 2022-2024 The guchi Company Ltd. All rights reserved.</a>");
+    statusLabel.setText("<a href=\"https://www.guchi-robotics.com\" style=\"text-decoration: none; color: #000000;\">Copyright 2023-2024 The guchi Company Ltd. All rights reserved.</a>");
     statusLabel.setOpenExternalLinks(true);
 
     // 将标签添加到状态栏，并设置其占用状态栏的比例为1
@@ -479,6 +515,7 @@ void MainWindow::initVTK()
     writer = vtkSmartPointer<vtkPLYWriter>::New();
 //    writer->AddComment("This is a custom comment line."); // 添加注释信息
     writer->SetFileTypeToASCII(); // 设置文件类型为 ASCII
+    writer->SetArrayName(bColorBasis ? "Scalars" : "Colors");
 
     // 创建点云数据
     points = vtkSmartPointer<vtkPoints>::New();
@@ -495,24 +532,58 @@ void MainWindow::initVTK()
     vertices->InsertNextCell(1, pid);
 #endif
 
-    // 创建标量数据
-    scalars = vtkSmartPointer<vtkFloatArray>::New();
-    scalars->SetNumberOfComponents(1);
-    if (ui->actPointCloudColor->isChecked()) {
-        scalars->SetNumberOfTuples(points->GetNumberOfPoints());
-        for (vtkIdType i = 0; i < points->GetNumberOfPoints(); i++)
-        {
-            scalars->SetValue(i, points->GetPoint(i)[2]); // 将 z 值设置为标量值
+    if (bColorBasis) {
+        // 创建标量数据
+        scalars = vtkSmartPointer<vtkFloatArray>::New();
+        scalars->SetNumberOfComponents(1);
+        scalars->SetName("Scalars");
+        if (ui->actPointCloudColor->isChecked()) {
+            scalars->SetNumberOfTuples(points->GetNumberOfPoints());
+            for (vtkIdType i = 0; i < points->GetNumberOfPoints(); i++)
+            {
+                scalars->SetValue(i, points->GetPoint(i)[2]); // 将 z 值设置为标量值
+            }
+        } else {
+            scalars->Initialize();
         }
     } else {
-        scalars->Initialize();
+        // 创建颜色数组
+        colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+        colors->SetNumberOfComponents(3);
+        colors->SetName("Colors");
+        colors->SetNumberOfTuples(points->GetNumberOfPoints());
+        for (vtkIdType i = 0; i < points->GetNumberOfPoints(); i++)
+        {
+            switch (i) {
+            case 0:
+                colors->SetTuple3(i, 255, 0, 0); // 红色
+                break;
+            case 1:
+                colors->SetTuple3(i, 0, 255, 0); // 绿色
+                break;
+            case 2:
+                colors->SetTuple3(i, 0, 0, 255); // 蓝色
+                break;
+            case 3:
+                colors->SetTuple3(i, 255, 255, 0); // 黄色
+                break;
+            default:
+                colors->SetTuple3(i, 255, 0, 0); // 红色
+                break;
+            }
+//            colors->InsertNextTuple3(255, 0, 0); // 红色
+        }
     }
 
     // 创建多边形数据
     polydata = vtkSmartPointer<vtkPolyData>::New();
     polydata->SetPoints(points);
     polydata->SetVerts(vertices);
-    polydata->GetPointData()->SetScalars(scalars); // 将标量属性设置到点云
+    if (bColorBasis) {
+        polydata->GetPointData()->SetScalars(scalars); // 将标量属性设置到点云
+    } else {
+        polydata->GetPointData()->SetScalars(colors); // 将颜色数组与 PolyData 关联
+    }
 
     // 创建颜色映射
     lut = vtkSmartPointer<vtkLookupTable>::New();
@@ -531,8 +602,10 @@ void MainWindow::initVTK()
     actor = vtkSmartPointer<vtkActor>::New();
     actor->SetMapper(mapper);
 //    actor->GetProperty()->SetPointSize(4);
-    if (false == ui->actPointCloudColor->isChecked()) {
-        actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 取消设置属性，恢复默认颜色
+    if (bColorBasis) {
+        if (false == ui->actPointCloudColor->isChecked()) {
+            actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 取消设置属性，恢复默认颜色
+        }
     }
 
     // 创建标量条
@@ -599,6 +672,10 @@ void MainWindow::initVTK()
 
     // 添加到布局中
     ui->verticalLayout->addWidget(renderWindowInteractor);
+
+    writer->SetFileName("Colors.ply");
+    writer->SetInputData(polydata);
+    writer->Write();
 }
 
 void MainWindow::initSignalsAndSlots()
@@ -627,13 +704,15 @@ void MainWindow::initSignalsAndSlots()
     // 连接信号与槽，监听用户点击的按钮，如果用户同意关闭，则程序退出
     connect(&msgBox, &QMessageBox::buttonClicked, this, &MainWindow::buttonClicked);
     // 窗口询问改变
-    connect(&chkInquiry, &QCheckBox::stateChanged, this, &MainWindow::slt_chkInquiry_stateChanged);
+    connect(&chbInquiry, &QCheckBox::stateChanged, this, &MainWindow::slt_chbInquiry_stateChanged);
 
     /************ 设置界面 ************/
     // 窗口置顶
     connect(&dlgSet, &SetDialog::sigWindowOnTop, this, &MainWindow::sltWindowOnTop);
     // 渲染背景
     connect(&dlgSet, &SetDialog::sigRendererBackground, this, &MainWindow::sltRendererBackground);
+    // 点云颜色
+    connect(&dlgSet, &SetDialog::sigRestart, this, &MainWindow::slt_actRestart_triggered);
 
     /************ UDP 接收线程处理显示 ************/
     // 帧开始
@@ -692,26 +771,35 @@ void MainWindow::showPointCloud(QString fileName)
     reader->SetFileName(fileName.toStdString().c_str());
     reader->Update();
 
-    if (ui->actPointCloudColor->isChecked()) {
-        // 设置一个包含标量数据的数组的大小，使其与点云数据中的点数相匹配
-        scalars->SetNumberOfTuples(reader->GetOutput()->GetNumberOfPoints());
-#if 0
-        qDebug() << scalars->GetNumberOfTuples();
-        qDebug() << scalars->GetNumberOfValues();
-        qDebug() << reader->GetOutput()->GetNumberOfPoints();
-        qDebug() << reader->GetOutput()->GetPoints()->GetNumberOfPoints();
-#endif
-    } else {
-        scalars->Initialize();
-        actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 取消设置属性，恢复默认颜色
-    }
     for (vtkIdType i = 0; i < reader->GetOutput()->GetNumberOfPoints(); i++)
     {
         pid[0] = points->InsertNextPoint(reader->GetOutput()->GetPoints()->GetPoint(i));
         vertices->InsertNextCell(1, pid);
+    }
+
+    if (bColorBasis) {
         if (ui->actPointCloudColor->isChecked()) {
-            scalars->SetValue(i, reader->GetOutput()->GetPoints()->GetPoint(i)[2]); // 将 z 值设置为标量值
+            // 设置一个包含标量数据的数组的大小，使其与点云数据中的点数相匹配
+            scalars->SetNumberOfTuples(points->GetNumberOfPoints());
+            // 插入顶点 创建一个包含单个顶点的单元，并将点云数据中的每个点与这些单元关联起来，从而定义了点云数据的拓扑结构
+            for (vtkIdType i = 0; i < points->GetNumberOfPoints(); i++)
+            {
+                scalars->SetValue(i, points->GetPoint(i)[2]); // 将 z 值设置为标量值
+            }
+#if 0
+            qDebug() << scalars->GetNumberOfTuples();
+            qDebug() << scalars->GetNumberOfValues();
+            qDebug() << reader->GetOutput()->GetNumberOfPoints();
+            qDebug() << reader->GetOutput()->GetPoints()->GetNumberOfPoints();
+#endif
+        } else {
+            scalars->Initialize();
+            actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 取消设置属性，恢复默认颜色
         }
+    } else {
+        // 设置颜色
+        colors->SetNumberOfTuples(points->GetNumberOfPoints());
+        colors->ShallowCopy(reader->GetOutput()->GetPointData()->GetScalars());
     }
 
     // 获取数据范围

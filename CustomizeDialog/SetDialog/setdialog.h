@@ -2,6 +2,7 @@
 #define SETDIALOG_H
 
 #include <QWidget>
+#include <QButtonGroup>
 #include "SysConfig.h"
 
 namespace Ui {
@@ -36,14 +37,21 @@ signals:
     /// @brief 渲染背景
     void sigRendererBackground(SysConfig::RendererBackground index);
 
+    /// @brief 重启
+    void sigRestart();
+
 private slots:
     /// @brief 窗口置顶改变
     /// @param state 窗口置顶状态
-    void slt_chkTop_stateChanged(int state);
+    void slt_chbTop_stateChanged(int state);
 
     /// @brief 窗口询问改变
     /// @param state 窗口询问状态
-    void slt_chkInquiry_stateChanged(int state);
+    void slt_chbInquiry_stateChanged(int state);
+
+    /// @brief 点云颜色依据
+    /// @param arg1 坐标值或点云轮廓
+    void slt_chbColorBasis_stateChanged(int arg1);
 
     /// @brief 默认渲染背景
     void slt_rdoDefault_clicked();
@@ -66,13 +74,23 @@ private slots:
     void slt_btnUdpBase_toggled(bool checked);
 
 private:
-    Ui::SetDialog *ui;
+    /// @brief 单选框互斥
+    void radioButtonExclusive();
 
     /// @brief 初始化
     void initial();
 
     /// @brief 初始化信号与槽连接
     void initSignalAndSlot();
+
+    /// @brief 设置选中状态
+    void setChecked();
+
+private:
+    Ui::SetDialog *ui;
+
+    /// @brief 渲染背景单选框互斥容器
+    QButtonGroup btnGroupRendererBackground;
 };
 
 #endif // SETDIALOG_H

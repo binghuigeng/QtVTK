@@ -35,6 +35,18 @@ bool SysConfig::getWindowClose()
     return configIniRead.value("/Universal/WindowClose", false).toBool();
 }
 
+void SysConfig::setPointCloudColorBasis(bool checked)
+{
+    QSettings configIniWrite("./Config/config.ini", QSettings::IniFormat);
+    configIniWrite.setValue("/Universal/Color", checked);
+}
+
+bool SysConfig::getPointCloudColorBasis()
+{
+    QSettings configIniRead("./Config/config.ini", QSettings::IniFormat);
+    return configIniRead.value("/Universal/Color", false).toBool();
+}
+
 void SysConfig::setRendererBackground(SysConfig::RendererBackground index)
 {
     QSettings configIniWrite("./Config/config.ini", QSettings::IniFormat);

@@ -38,6 +38,14 @@ public:
     /// @return true:窗口询问 false:取消窗口询问
     static bool getWindowClose();
 
+    /// @brief 设置点云颜色依据
+    /// @param enabled true:坐标值 false:点云轮廓
+    static void setPointCloudColorBasis(bool checked);
+
+    /// @brief 获取点云颜色依据
+    /// @return true:坐标值 false:点云轮廓
+    static bool getPointCloudColorBasis();
+
     /// @brief 设置渲染背景
     /// @param index Default:默认 Gray:灰色 NavyBlue:藏青色 DarkBlue:深蓝色
     static void setRendererBackground(SysConfig::RendererBackground index);
