@@ -401,6 +401,24 @@ void MainWindow::slt_actRestart_triggered()
     QProcess::startDetached(QCoreApplication::applicationFilePath(), QCoreApplication::arguments());
 }
 
+void MainWindow::slt_actSysShutdown_triggered()
+{
+    // 退出应用程序的主事件循环，从而关闭应用程序
+    QCoreApplication::quit();
+
+    // 执行关机命令 /s 参数表示关闭计算机，/t 0 表示延迟时间为 0，即立即关闭
+    QProcess::startDetached("shutdown /s /t 0");
+}
+
+void MainWindow::slt_actSysRestart_triggered()
+{
+    // 退出应用程序的主事件循环，从而关闭应用程序
+    QCoreApplication::quit();
+
+    // 执行重启命令 /r 参数表示重启计算机，/t 0 表示延迟时间为 0，即立即重启
+    QProcess::startDetached("shutdown /r /t 0");
+}
+
 void MainWindow::slt_actUniversal_triggered()
 {
     // 设置对话框
@@ -672,10 +690,6 @@ void MainWindow::initVTK()
 
     // 添加到布局中
     ui->verticalLayout->addWidget(renderWindowInteractor);
-
-    writer->SetFileName("Colors.ply");
-    writer->SetInputData(polydata);
-    writer->Write();
 }
 
 void MainWindow::initSignalsAndSlots()
@@ -693,6 +707,10 @@ void MainWindow::initSignalsAndSlots()
     connect(ui->actAdd, &QAction::triggered, this, &MainWindow::slt_actAdd_triggered);
     // 重启
     connect(ui->actRestart, &QAction::triggered, this, &MainWindow::slt_actRestart_triggered);
+    // 系统关机
+    connect(ui->actSysShutdown, &QAction::triggered, this, &MainWindow::slt_actSysShutdown_triggered);
+    // 系统重启
+    connect(ui->actSysRestart, &QAction::triggered, this, &MainWindow::slt_actSysRestart_triggered);
     // 通用
     connect(ui->actUniversal, &QAction::triggered, this, &MainWindow::slt_actUniversal_triggered);
     // 点云颜色

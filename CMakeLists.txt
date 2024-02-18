@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(QtVTK VERSION 0.2.8 LANGUAGES CXX)
+project(QtVTK VERSION 0.2.9 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -26,14 +26,8 @@ if(WIN32)
     set(APP_ICON_RESOURCE_WINDOWS Resource/App/myApp.rc)
 endif()
 
-#option(COORDINATE_COLOR "Generate colors based on point cloud coordinate values" OFF)
-
 # 配置头文件以将一些 CMake 设置传递给源代码
 configure_file(Config/ProjectConfig.h.in ProjectConfig.h)
-
-#if(COORDINATE_COLOR)
-#    add_definitions(-DCOORDINATE_COLOR)
-#endif()
 
 # VTK
 find_package(VTK COMPONENTS

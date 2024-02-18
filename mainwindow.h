@@ -117,6 +117,12 @@ private slots:
     /// @brief 重启
     void slt_actRestart_triggered();
 
+    /// @brief 系统关机
+    void slt_actSysShutdown_triggered();
+
+    /// @brief 系统重启
+    void slt_actSysRestart_triggered();
+
     /// @brief 通用
     void slt_actUniversal_triggered();
 

@@ -95,6 +95,9 @@ background-color: rgb(80, 80, 80);</string>
     <addaction name="actAdd"/>
     <addaction name="separator"/>
     <addaction name="actRestart"/>
+    <addaction name="separator"/>
+    <addaction name="actSysShutdown"/>
+    <addaction name="actSysRestart"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
@@ -202,6 +205,22 @@ background-color: rgb(80, 80, 80);</string>
    </property>
    <property name="toolTip">
     <string>点云颜色</string>
+   </property>
+  </action>
+  <action name="actSysShutdown">
+   <property name="text">
+    <string>系统关机</string>
+   </property>
+   <property name="toolTip">
+    <string>系统关机</string>
+   </property>
+  </action>
+  <action name="actSysRestart">
+   <property name="text">
+    <string>系统重启</string>
+   </property>
+   <property name="toolTip">
+    <string>系统重启</string>
    </property>
   </action>
  </widget>
